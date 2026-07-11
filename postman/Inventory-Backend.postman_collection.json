@@ -1,0 +1,2164 @@
+{
+  "info": {
+    "_postman_id": "a8f3e2b1-inventory-backend",
+    "name": "Inventory Backend",
+    "description": "REST API for **inventory-backend** (Node.js + MongoDB).\n\n**Base URL:** `http://localhost:8000` (variable `baseUrl`)\n\n**Auth:** Run **Auth \u2192 Login** first; the test script saves `token` for protected routes. Use **Auth \u2192 Logout** to invalidate the token server-side (also clear `token` on the client).\n\n**Login:** Any active user can sign in with the **email and password** set when their account was created (`POST /api/users`).\n\n**Seed users** (other demo users use `ChangeMe123!` unless `SEED_DEFAULT_PASSWORD` is set):\n- `bandohkwaku@gmail.com` \u2014 Administrator (password: `123456`)\n- `gra@ladepuls.com` \u2014 GRA Reporter\n- `light@ladepuls.com` \u2014 Cashier (Lighting)\n- `multi@ladepuls.com` \u2014 Cashier (Lighting + Sanitary Ware)\n\n**Roles:** Admins with `manage_roles` entitlement can create custom roles and assign entitlements. Run **Roles \u2192 List roles** to get `roleId` for user creation.\n\n**Staff & Users:**\n- Create staff first (**Staff \u2192 Create staff**); `employeeId` is auto-generated (`EMP-001`, \u2026).\n- Create users with `staffId` \u2014 display **name** is taken from `staff.fullName` (do not send `name`). Use **Staff \u2192 List staff** for the name dropdown.\n\n**Notes:**\n- All records use MongoDB `_id`.\n- Product create uses **multipart/form-data** (`image` optional).\n- Settings logo upload uses **multipart/form-data** (`logo` optional); path stored as `business.logoUrl`.\n- Sales use `items[]`, server pricing, atomic stock, receipt id `R-{BASE36}`, GRA tax breakdown (multiplier 1.219).\n- Proformas use `PI-{BASE36}`; no stock impact.\n- Expenses: `E-####` ids; summary + list filters; mark paid via `PATCH .../mark-paid`.\n- Errors: `{ \"message\": \"...\" }` or `{ \"error\": \"...\" }`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "logoUrl",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoryId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "productId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "supplierId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "purchaseId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "expenseId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "saleId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "receiptId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "userId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "roleId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "proformaId",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "staffId",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "System",
+      "item": [
+        {
+          "name": "Health",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/health"
+          },
+          "response": []
+        },
+        {
+          "name": "API index",
+          "description": "Lists main paths. Use this first if routes return 404 (wrong server or port).",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  if (json.token) {",
+                  "    pm.collectionVariables.set('token', json.token);",
+                  "  }",
+                  "  if (json.user && json.user._id) {",
+                  "    pm.collectionVariables.set('userId', json.user._id);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"bandohkwaku@gmail.com\",\n  \"password\": \"123456\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/login"
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  pm.collectionVariables.set('token', '');",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [],
+            "url": "{{baseUrl}}/api/auth/logout"
+          },
+          "response": []
+        },
+        {
+          "name": "Me (current user)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/auth/me"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "description": "Requires `users` entitlement. Bearer token from Login.\n\n**Flow:**\n1. **Staff \u2192 Create staff** / **List staff** for the name dropdown (`staffId`)\n2. **Roles \u2192 List roles** \u2014 saves `roleId`\n3. **Create user** with `staffId` (name is copied from staff; do not send `name`)\n\nOptional PATCH fields: `staffId`, `email`, `password`, `roleId`, `categoryIds`, `active`. Sending `name` returns 400.",
+      "item": [
+        {
+          "name": "List users",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/users"
+          },
+          "response": []
+        },
+        {
+          "name": "Create user",
+          "description": "Requires `staffId`. Response `name` is the linked staff member's `fullName`.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  if (body && body._id) pm.collectionVariables.set('userId', body._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"staffId\": \"{{staffId}}\",\n  \"email\": \"cashier@ladepuls.com\",\n  \"password\": \"ChangeMe123!\",\n  \"roleId\": \"{{roleId}}\",\n  \"categoryIds\": [\"{{categoryId}}\"],\n  \"active\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/users"
+          },
+          "response": []
+        },
+        {
+          "name": "Get user by id",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update user",
+          "description": "Cannot set `name` directly. To change display name, update the staff member or send a new `staffId`.",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"staffId\": \"{{staffId}}\",\n  \"active\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete user",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/users/{{userId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Roles",
+      "description": "Requires `manage_roles` entitlement for CRUD. List entitlements is available to any authenticated user.",
+      "item": [
+        {
+          "name": "List entitlements",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/roles/entitlements"
+          },
+          "response": []
+        },
+        {
+          "name": "List roles",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const roles = pm.response.json();",
+                  "  const cashier = roles.find(r => r.slug === 'cashier');",
+                  "  if (cashier && cashier._id) {",
+                  "    pm.collectionVariables.set('roleId', cashier._id);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/roles"
+          },
+          "response": []
+        },
+        {
+          "name": "Create role",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Store Manager\",\n  \"description\": \"Manages catalog and sales\",\n  \"entitlements\": [\n    \"dashboard\",\n    \"products\",\n    \"inventory\",\n    \"categories\",\n    \"sales_pos\",\n    \"sales_reports\",\n    \"receipts\"\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/roles"
+          },
+          "response": []
+        },
+        {
+          "name": "Get role by id",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/roles/{{roleId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update role",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated role description\",\n  \"entitlements\": [\n    \"dashboard\",\n    \"products\",\n    \"sales_pos\"\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/roles/{{roleId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete role",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/roles/{{roleId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Settings",
+      "item": [
+        {
+          "name": "Get settings",
+          "description": "Public. Returns business (including `logoUrl`) and receipt preferences.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  const url = body && body.business && body.business.logoUrl;",
+                  "  if (url) {",
+                  "    pm.collectionVariables.set('logoUrl', url);",
+                  "  } else {",
+                  "    pm.collectionVariables.set('logoUrl', '');",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/settings"
+          },
+          "response": []
+        },
+        {
+          "name": "Update settings (admin)",
+          "description": "Requires `settings` entitlement and Bearer token. JSON body for business/receipt fields only. Does not upload a logo file \u2014 use **Upload logo**.",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"business\": {\n    \"name\": \"Ladepuls Store\",\n    \"address\": \"Accra Ghana\",\n    \"phone\": \"+233 XX XXX XXXX\",\n    \"email\": \"info@ladepuls.com\",\n    \"taxId\": \"C0000000000\"\n  },\n  \"receipt\": {\n    \"showLogo\": true,\n    \"showAddress\": true,\n    \"showPhone\": true,\n    \"showEmail\": true,\n    \"footerMessage\": \"Thank you for your business!\"\n  }\n}"
+            },
+            "url": "{{baseUrl}}/api/settings"
+          },
+          "response": []
+        },
+        {
+          "name": "Upload logo (admin)",
+          "description": "Requires `settings` entitlement and Bearer token. Multipart form with file field `logo` (JPEG, PNG, GIF, WebP; max 2 MB). Replaces any existing logo and sets `business.logoUrl`. Saves `logoUrl` collection variable on success.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  const url = body && body.business && body.business.logoUrl;",
+                  "  if (url) {",
+                  "    pm.collectionVariables.set('logoUrl', url);",
+                  "  } else {",
+                  "    pm.collectionVariables.set('logoUrl', '');",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "logo",
+                  "description": "Required for this request; JPEG, PNG, GIF, WebP; max 2 MB",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/settings"
+          },
+          "response": []
+        },
+        {
+          "name": "Clear logo (admin)",
+          "description": "Requires `settings` entitlement and Bearer token. Removes the current logo file and sets `business.logoUrl` to null.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const body = pm.response.json();",
+                  "  const url = body && body.business && body.business.logoUrl;",
+                  "  if (url) {",
+                  "    pm.collectionVariables.set('logoUrl', url);",
+                  "  } else {",
+                  "    pm.collectionVariables.set('logoUrl', '');",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"clearLogo\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/settings"
+          },
+          "response": []
+        }
+      ],
+      "description": "Business and receipt settings (singleton `_id: app`). GET is public. PATCH requires `settings` entitlement and Bearer token.\n\n**Logo:** Upload via multipart field `logo` (JPEG, PNG, GIF, WebP; max 2 MB). Stored as `business.logoUrl` (e.g. `/uploads/logos/<file>`), served under `{{baseUrl}}/uploads/...`. Use **Clear logo** or `clearLogo=true` to remove."
+    },
+    {
+      "name": "Categories",
+      "item": [
+        {
+          "name": "List categories",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const list = pm.response.json();",
+                  "  if (Array.isArray(list) && list[0] && list[0]._id) {",
+                  "    pm.collectionVariables.set('categoryId', list[0]._id);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/categories"
+          },
+          "response": []
+        },
+        {
+          "name": "Create category",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dairy\"\n}"
+            },
+            "url": "{{baseUrl}}/api/categories"
+          },
+          "response": []
+        },
+        {
+          "name": "Update category",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Dairy & Eggs\"\n}"
+            },
+            "url": "{{baseUrl}}/api/categories/{{categoryId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete category",
+          "description": "409 if products are assigned to this category.",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/categories/{{categoryId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List products",
+          "description": "Optional query: `categoryId`",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const list = pm.response.json();",
+                  "  if (Array.isArray(list) && list[0] && list[0]._id) {",
+                  "    pm.collectionVariables.set('productId', list[0]._id);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/products"
+          },
+          "response": []
+        },
+        {
+          "name": "Allowed units",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/products/meta/units"
+          },
+          "response": []
+        },
+        {
+          "name": "Search products (POS)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/products/search?q=sugar&limit=20"
+          },
+          "response": []
+        },
+        {
+          "name": "Lookup product by SKU (scan)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/products/lookup/sku/MLK-001"
+          },
+          "response": []
+        },
+        {
+          "name": "Create product",
+          "description": "Multipart form. `sku` is optional. `categoryId`, `name`, `sellingPrice`, `unit`, `stockQuantity`, `reorderAt` required.",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "type": "text",
+                  "value": "Milk 1L"
+                },
+                {
+                  "key": "categoryId",
+                  "type": "text",
+                  "value": "{{categoryId}}"
+                },
+                {
+                  "key": "sku",
+                  "type": "text",
+                  "value": "MLK-001",
+                  "description": "Optional; letters, digits, hyphens, underscores; unique when set."
+                },
+                {
+                  "key": "description",
+                  "type": "text",
+                  "value": "",
+                  "description": "Optional",
+                  "disabled": true
+                },
+                {
+                  "key": "sellingPrice",
+                  "type": "text",
+                  "value": "12.50"
+                },
+                {
+                  "key": "costPrice",
+                  "type": "text",
+                  "value": "8.25",
+                  "description": "Optional",
+                  "disabled": true
+                },
+                {
+                  "key": "unit",
+                  "type": "text",
+                  "value": "units"
+                },
+                {
+                  "key": "stockQuantity",
+                  "type": "text",
+                  "value": "24"
+                },
+                {
+                  "key": "reorderAt",
+                  "type": "text",
+                  "value": "5"
+                },
+                {
+                  "key": "image",
+                  "description": "Optional; JPEG, PNG, GIF, WebP; max 2 MB",
+                  "type": "file",
+                  "src": []
+                }
+              ]
+            },
+            "url": "{{baseUrl}}/api/products"
+          },
+          "response": []
+        },
+        {
+          "name": "Get product by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/products/{{productId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update product (JSON)",
+          "description": "Send only fields to change. Set `\"sku\": null` to clear SKU.",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Milk 1L (fresh)\",\n  \"sellingPrice\": 13.99,\n  \"stockQuantity\": 30\n}"
+            },
+            "url": "{{baseUrl}}/api/products/{{productId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete product",
+          "description": "409 if product appears on saved purchases.",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/products/{{productId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Suppliers",
+      "item": [
+        {
+          "name": "Suppliers summary",
+          "description": "totalSuppliers, active/inactive counts, categoriesCount, outstandingGhs.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/suppliers/summary"
+          },
+          "response": []
+        },
+        {
+          "name": "List suppliers",
+          "description": "Optional query: `status=active`, `category=groceries`",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "  const list = pm.response.json();",
+                  "  if (Array.isArray(list) && list[0] && list[0]._id) {",
+                  "    pm.collectionVariables.set('supplierId', list[0]._id);",
+                  "  }",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/suppliers"
+          },
+          "response": []
+        },
+        {
+          "name": "Supplier category options",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/suppliers/meta/categories"
+          },
+          "response": []
+        },
+        {
+          "name": "Supplier status options",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/suppliers/meta/statuses"
+          },
+          "response": []
+        },
+        {
+          "name": "Create supplier",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Wholesale Grocers\",\n  \"contactPerson\": \"Ama Mensah\",\n  \"category\": \"groceries\",\n  \"phone\": \"+233 24 000 0000\",\n  \"email\": \"orders@example.com\",\n  \"cityRegion\": \"Accra\",\n  \"status\": \"active\",\n  \"address\": \"12 Market Road\",\n  \"notes\": \"Payment terms, delivery schedule, etc.\"\n}"
+            },
+            "url": "{{baseUrl}}/api/suppliers"
+          },
+          "response": []
+        },
+        {
+          "name": "Get supplier by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/suppliers/{{supplierId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update supplier",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Wholesale Grocers Ltd\",\n  \"phone\": \"+233 24 111 2222\"\n}"
+            },
+            "url": "{{baseUrl}}/api/suppliers/{{supplierId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete supplier",
+          "description": "409 if linked to purchases.",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/suppliers/{{supplierId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Purchases",
+      "item": [
+        {
+          "name": "Purchases summary",
+          "description": "purchaseCount, unpaidInvoicesCount, totalSpend, outstanding, currency.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/purchases/summary"
+          },
+          "response": []
+        },
+        {
+          "name": "List purchases",
+          "description": "Query: `page`, `limit`, `q`, `supplierId`, `paymentStatus` (unpaid|partial|paid). Response: `items`, pagination. Each item includes `purchaseTotal`, `balance`, `paymentStatus`.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/purchases?page=1&limit=10"
+          },
+          "response": []
+        },
+        {
+          "name": "Create purchase",
+          "description": "Increases stock on each line item.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json._id) pm.collectionVariables.set('purchaseId', json._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2026-05-10\",\n  \"supplierId\": \"{{supplierId}}\",\n  \"invoiceNumber\": \"INV-001\",\n  \"amountPaid\": 0,\n  \"lineItems\": [\n    {\n      \"productId\": \"{{productId}}\",\n      \"quantity\": 5,\n      \"unitPrice\": 12.5\n    }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/purchases"
+          },
+          "response": []
+        },
+        {
+          "name": "Get purchase by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/purchases/{{purchaseId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Record payment",
+          "description": "Adds to amountPaid and payments[]; recalculates balance and paymentStatus.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"amount\": 375\n}"
+            },
+            "url": "{{baseUrl}}/api/purchases/{{purchaseId}}/payments"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete purchase",
+          "description": "Reverses stock; fails if stock would go negative.",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/purchases/{{purchaseId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Expenses",
+      "description": "Requires `expenses` entitlement and Bearer token from **Auth \u2192 Login**.\n\n**Fields:** `expenseId` (`E-0001`), `date`, `category`, `description`, `reference` (optional), `chartAccount` (derived from category), `amount` (GHS), `status` (`Pending`|`Paid`). No paid-from / payment source field.\n\n**Create:** set `status` to `Paid` or `markPaid: true` to mark paid on create.\n**Mark paid:** `PATCH /api/expenses/:id/mark-paid`.",
+      "item": [
+        {
+          "name": "Expenses meta",
+          "description": "categories, statuses, chartAccountByCategory.",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/expenses/meta"
+          },
+          "response": []
+        },
+        {
+          "name": "Expenses summary",
+          "description": "totalAmount, paidAmount, pendingAmount, pendingCount, expenseCount, currency.",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/expenses/summary"
+          },
+          "response": []
+        },
+        {
+          "name": "List expenses",
+          "description": "Query: `page`, `limit`, `q`, `status` (Pending|Paid), `category`. Response: `items`, pagination.",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/expenses?page=1&limit=20"
+          },
+          "response": []
+        },
+        {
+          "name": "Create expense",
+          "description": "Required: `date`, `category`, `description`, `amount`. Optional: `reference`, `status` / `markPaid`.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  if (json._id) pm.collectionVariables.set('expenseId', json._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2026-07-11\",\n  \"category\": \"Utilities\",\n  \"description\": \"Electricity bill \u2014 ECG\",\n  \"amount\": 450,\n  \"reference\": \"ECG-JUL-2026\",\n  \"markPaid\": true\n}"
+            },
+            "url": "{{baseUrl}}/api/expenses"
+          },
+          "response": []
+        },
+        {
+          "name": "Create expense (pending)",
+          "description": "Creates with status Pending (default).",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  if (json._id) pm.collectionVariables.set('expenseId', json._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2026-07-10\",\n  \"category\": \"Transport\",\n  \"description\": \"Delivery run \u2014 Tema\",\n  \"amount\": 85,\n  \"reference\": \"\"\n}"
+            },
+            "url": "{{baseUrl}}/api/expenses"
+          },
+          "response": []
+        },
+        {
+          "name": "Get expense by id",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/expenses/{{expenseId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update expense",
+          "description": "Partial update. Changing `category` also updates `chartAccount` unless you send `chartAccount`.",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Electricity bill \u2014 ECG (updated)\",\n  \"amount\": 475\n}"
+            },
+            "url": "{{baseUrl}}/api/expenses/{{expenseId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Mark expense paid",
+          "description": "Sets status to Paid. 409 if already paid.",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [],
+            "url": "{{baseUrl}}/api/expenses/{{expenseId}}/mark-paid"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete expense",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/expenses/{{expenseId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "POS / Sales",
+      "description": "Create sale requires Bearer token from **Auth \u2192 Login** and `sales_pos` entitlement. Response includes `servedByName` (logged-in attendant).",
+      "item": [
+        {
+          "name": "Complete sale",
+          "description": "Server prices from catalog; atomic stock decrement. Receipt id `R-{BASE36}`. Optional `Idempotency-Key` header. `paymentMethod`: `Cash` or `Mobile Money`. Requires login.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201 || pm.response.code === 200) {",
+                  "  const json = pm.response.json();",
+                  "  if (json._id) pm.collectionVariables.set('saleId', json._id);",
+                  "  if (json.receiptId) pm.collectionVariables.set('receiptId', json.receiptId);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Idempotency-Key",
+                "value": "",
+                "description": "Optional; replay returns original sale (200).",
+                "disabled": true
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer\": \"Walk-in\",\n  \"discount\": 0,\n  \"paymentMethod\": \"Cash\",\n  \"cashTendered\": 50,\n  \"items\": [\n    { \"productId\": \"{{productId}}\", \"quantity\": 1 }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/sales"
+          },
+          "response": []
+        },
+        {
+          "name": "Complete sale (Mobile Money)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer\": \"Walk-in\",\n  \"discount\": 0,\n  \"paymentMethod\": \"Mobile Money\",\n  \"items\": [\n    { \"productId\": \"{{productId}}\", \"quantity\": 1 }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/sales"
+          },
+          "response": []
+        },
+        {
+          "name": "List sales",
+          "description": "Query: `page`, `limit`, `from`, `to`, `date`, `paymentMethod`, `receiptId`. Use `wrap=false` for plain array.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/sales?page=1&limit=20"
+          },
+          "response": []
+        },
+        {
+          "name": "Get sale by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/sales/{{saleId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Get sale by receipt id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/sales/{{receiptId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Void sale (restore stock)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"notes\": \"Customer return\"\n}"
+            },
+            "url": "{{baseUrl}}/api/sales/{{saleId}}/void"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Proforma Invoices",
+      "item": [
+        {
+          "name": "List proformas",
+          "description": "Optional query: `status` (draft|sent|approved|expired).",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/proformas"
+          },
+          "response": []
+        },
+        {
+          "name": "Create proforma",
+          "description": "Default status `sent`, validUntil +14 days. Does not affect stock.",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const json = pm.response.json();",
+                  "  if (json._id) pm.collectionVariables.set('proformaId', json._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer\": \"Acme Ltd\",\n  \"customerPhone\": \"+233 24 000 0000\",\n  \"discount\": 0,\n  \"notes\": \"Quote valid 14 days\",\n  \"items\": [\n    { \"productId\": \"{{productId}}\", \"quantity\": 2 }\n  ]\n}"
+            },
+            "url": "{{baseUrl}}/api/proformas"
+          },
+          "response": []
+        },
+        {
+          "name": "Get proforma by id",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/proformas/{{proformaId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update proforma",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"approved\",\n  \"notes\": \"Customer accepted\"\n}"
+            },
+            "url": "{{baseUrl}}/api/proformas/{{proformaId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete proforma",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/proformas/{{proformaId}}"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Dashboard",
+      "description": "Dashboard metrics, charts, and recent activity for the home screen.",
+      "item": [
+        {
+          "name": "Full dashboard",
+          "description": "All dashboard data in one response: metrics, sales performance, top products, recent sales/restocks, and income/expense charts. Query: `days` (default 7), `topLimit` (default 5), `recentLimit` (default 10).",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard?days=7&topLimit=5&recentLimit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard"
+              ],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "7"
+                },
+                {
+                  "key": "topLimit",
+                  "value": "5"
+                },
+                {
+                  "key": "recentLimit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Dashboard summary",
+          "description": "Legacy summary plus metric cards and recent sales. Backward-compatible with the original `/api/dashboard/summary` endpoint.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/dashboard/summary"
+          },
+          "response": []
+        },
+        {
+          "name": "Metric cards",
+          "description": "Today's sales, 7-day revenue, inventory units, and active customers with change percentages.",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/dashboard/metrics"
+          },
+          "response": []
+        },
+        {
+          "name": "Sales performance chart",
+          "description": "Daily sales revenue for the past N days. Query: `days` (default 7, max 90).",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/sales-performance?days=7",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "sales-performance"
+              ],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "7"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Top products chart",
+          "description": "Best sellers by quantity. Query: `days` (default 7), `limit` (default 5).",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/top-products?days=7&limit=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "top-products"
+              ],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "7"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Recent sales",
+          "description": "Latest transactions for the dashboard table. Query: `limit` (default 10).",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/recent-sales?limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "recent-sales"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Recent restocks",
+          "description": "Latest purchase line items (inventory updates). Query: `limit` (default 10).",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/recent-restocks?limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "recent-restocks"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Income & expense charts",
+          "description": "Daily income (sales) and expenses (purchase spend) series. Query: `days` (default 7).",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/cashflow?days=7",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "cashflow"
+              ],
+              "query": [
+                {
+                  "key": "days",
+                  "value": "7"
+                }
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Staff",
+      "description": "Staff management. Requires `staff` or `payroll` entitlement. Bearer token from Login.\n\n**employeeId** is auto-generated as `EMP-001`, `EMP-002`, \u2026 (do not send it on create).\n**Users:** create a user account from a staff member via **Users \u2192 Create user** (`staffId`). Deleting staff fails if a user is linked.\n**Attendance statuses:** present, absent, late, on_leave.\n**Dates:** YYYY-MM-DD (UTC).\n**History weeks:** week 1 = days 1\u20137 of the month, week 2 = 8\u201314, etc.",
+      "item": [
+        {
+          "name": "Staff meta",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/staff/meta"
+          },
+          "response": []
+        },
+        {
+          "name": "Staff summary",
+          "description": "activeStaff, presentToday, absentToday, lateToday, unmarked. Optional `date` query.",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/staff/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "staff",
+                "summary"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "List staff",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/staff?status=active&q=",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "staff"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "active"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "Search name, employeeId, role, phone"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create staff",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "  const body = pm.response.json();",
+                  "  if (body && body._id) pm.collectionVariables.set('staffId', body._id);",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Kwaku Boateng\",\n  \"dateOfBirth\": \"1995-03-12\",\n  \"gender\": \"male\",\n  \"ghanaCardId\": \"GHA-123456789-0\",\n  \"phone\": \"0240000000\",\n  \"email\": \"kwaku@example.com\",\n  \"city\": \"Accra\",\n  \"residentialAddress\": \"12 Ring Road\",\n  \"emergencyContact\": {\n    \"fullName\": \"Ama Boateng\",\n    \"relationship\": \"spouse\",\n    \"phone\": \"0241111111\",\n    \"alternatePhone\": \"\"\n  },\n  \"role\": \"Cashier\",\n  \"department\": \"sales\",\n  \"hireDate\": \"2026-07-11\",\n  \"employmentType\": \"full_time\",\n  \"status\": \"active\",\n  \"baseSalary\": 2500,\n  \"transport\": 200,\n  \"otherAllowances\": 100,\n  \"ssnitDeduction\": 137.5,\n  \"payeDeduction\": 200,\n  \"bankName\": \"GCB Bank\",\n  \"accountNumber\": \"1234567890\",\n  \"notes\": \"\"\n}"
+            },
+            "url": "{{baseUrl}}/api/staff"
+          },
+          "response": []
+        },
+        {
+          "name": "Get staff by id",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/staff/{{staffId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Update staff",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role\": \"Supervisor\",\n  \"baseSalary\": 3000\n}"
+            },
+            "url": "{{baseUrl}}/api/staff/{{staffId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Delete staff",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [],
+            "url": "{{baseUrl}}/api/staff/{{staffId}}"
+          },
+          "response": []
+        },
+        {
+          "name": "Attendance meta",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/attendance/meta"
+          },
+          "response": []
+        },
+        {
+          "name": "Daily attendance",
+          "description": "Active staff with status for a date (default today).",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/daily?date=2026-07-11",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "daily"
+              ],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2026-07-11"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Attendance history",
+          "description": "Weekly grid. Use `year`+`month`+`week` or `from`+`to`.",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/attendance/history?year=2026&month=7&week=2",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "attendance",
+                "history"
+              ],
+              "query": [
+                {
+                  "key": "year",
+                  "value": "2026"
+                },
+                {
+                  "key": "month",
+                  "value": "7"
+                },
+                {
+                  "key": "week",
+                  "value": "2"
+                },
+                {
+                  "key": "q",
+                  "value": "",
+                  "description": "Optional staff search"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark attendance",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"staffId\": \"{{staffId}}\",\n  \"date\": \"2026-07-11\",\n  \"status\": \"present\"\n}"
+            },
+            "url": "{{baseUrl}}/api/attendance"
+          },
+          "response": []
+        },
+        {
+          "name": "Mark all present",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"date\": \"2026-07-11\"\n}"
+            },
+            "url": "{{baseUrl}}/api/attendance/mark-all-present"
+          },
+          "response": []
+        },
+        {
+          "name": "Clear attendance mark",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"staffId\": \"{{staffId}}\",\n  \"date\": \"2026-07-11\"\n}"
+            },
+            "url": "{{baseUrl}}/api/attendance"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Reports",
+      "item": [
+        {
+          "name": "GRA tax report",
+          "description": "Aggregated GRA breakdown from sales. Query: `from`, `to` (ISO dates).",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/reports/gra?from=2026-01-01&to=2026-12-31"
+          },
+          "response": []
+        },
+        {
+          "name": "GRA tax report (alias)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/api/reports/gra-reports?from=2026-01-01&to=2026-12-31"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

@@ -337,10 +337,12 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-const STAFF_ID_PREFIX = "ONYX-STAFF-";
+const STAFF_ID_PREFIX = "Onyx-";
 
 async function nextEmployeeId() {
-  const docs = await Staff.find({ employeeId: new RegExp(`^${STAFF_ID_PREFIX}\\d+$`, "i") })
+  const docs = await Staff.find({
+    employeeId: new RegExp(`^${STAFF_ID_PREFIX}\\d+$`, "i"),
+  })
     .select("employeeId")
     .lean();
   let max = 0;

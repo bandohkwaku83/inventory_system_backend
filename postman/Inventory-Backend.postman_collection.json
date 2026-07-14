@@ -2,7 +2,7 @@
   "info": {
     "_postman_id": "a8f3e2b1-inventory-backend",
     "name": "Inventory Backend",
-    "description": "REST API for **inventory-backend** (Node.js + MongoDB).\n\n**Base URL:** `http://localhost:8000` (variable `baseUrl`)\n\n**Auth:** Run **Auth \u2192 Login** first; the test script saves `token` for protected routes. Use **Auth \u2192 Logout** to invalidate the token server-side (also clear `token` on the client).\n\n**Login:** Any active user can sign in with the **email and password** set when their account was created (`POST /api/users`).\n\n**Seed users** (other demo users use `ChangeMe123!` unless `SEED_DEFAULT_PASSWORD` is set):\n- `bandohkwaku@gmail.com` \u2014 Administrator (password: `123456`)\n- `gra@ladepuls.com` \u2014 GRA Reporter\n- `light@ladepuls.com` \u2014 Cashier (Lighting)\n- `multi@ladepuls.com` \u2014 Cashier (Lighting + Sanitary Ware)\n\n**WMS roles** (seeded): `admin`, `warehouse_manager`, `store_keeper`, `requester`, `auditor`, plus `cashier` / `gra_reporter`.\n\n**Roles:** Admins with `manage_roles` entitlement can create custom roles and assign entitlements. Run **Roles \u2192 List roles** to get `roleId` for user creation.\n\n**Staff & Users:**\n- Create staff first (**Staff \u2192 Create staff**); `employeeId` is auto-generated (`EMP-001`, \u2026).\n- Create users with `staffId` \u2014 display **name** is taken from `staff.fullName` (do not send `name`). Use **Staff \u2192 List staff** for the name dropdown.\n\n**Notes:**\n- All records use MongoDB `_id`.\n- Product create uses **multipart/form-data** (`image` optional). Fields include `barcode`, `maxStock`, `reorderAt` (min stock).\n- Settings logo upload uses **multipart/form-data** (`logo` optional); path stored as `business.logoUrl`.\n- Sales use `items[]`, server pricing, receipt id `R-{BASE36}`, GRA tax breakdown (multiplier 1.219). Status: `pending` | `completed` | `voided`. Stock decrements only on **completed**. Park carts with `status: pending`; complete via `PATCH /api/sales/:id`. Customers live under `/api/customers` (requires `customers` entitlement).\n- Proformas use `PI-{BASE36}`; no stock impact.\n- Expenses: `E-####` ids; summary + list filters; mark paid via `PATCH .../mark-paid`.\n- Warehouses: hierarchy zone\u2192rack\u2192shelf\u2192bin with composite `fullPath` (e.g. MAIN-A-02-15); optional `managerId`; stock movements at `/api/stock-movements`.\n- **WMS workflows:** Goods Receipt `GR-#####` (`draft\u2192pending_approval\u2192completed`), Goods Issue `GI-#####` (`draft\u2192pending_approval\u2192approved\u2192issued`), Stock Count `SC-#####`, Transfers `draft\u2192pending_approval\u2192in_transit\u2192received`. Approvals Hub links receipt/issue/count/transfer on submit.\n- Audit trail: `GET /api/audit-logs`.\n- Errors: `{ \"message\": \"...\" }` or `{ \"error\": \"...\" }`.",
+    "description": "REST API for **inventory-backend** (Node.js + MongoDB).\n\n**Base URL:** `http://localhost:8000` (variable `baseUrl`)\n\n**Auth:** Run **Auth → Login** first; the test script saves `token` for protected routes. Use **Auth → Logout** to invalidate the token server-side (also clear `token` on the client).\n\n**Login:** Any active user can sign in with the **email and password** set when their account was created (`POST /api/users`).\n\n**Seed users** (other demo users use `ChangeMe123!` unless `SEED_DEFAULT_PASSWORD` is set):\n- `bandohkwaku@gmail.com` — Administrator (password: `123456`)\n- `gra@ladepuls.com` — GRA Reporter\n- `light@ladepuls.com` — Cashier (Lighting)\n- `multi@ladepuls.com` — Cashier (Lighting + Sanitary Ware)\n\n**WMS roles** (seeded): `admin`, `warehouse_manager`, `store_keeper`, `requester`, `auditor`, plus `cashier` / `gra_reporter`.\n\n**Roles:** Admins with `manage_roles` entitlement can create custom roles and assign entitlements. Run **Roles → List roles** to get `roleId` for user creation.\n\n**Staff & Users:**\n- Create staff first (**Staff → Create staff**); `employeeId` is auto-generated (`Onyx-001`, …).\n- Create users with `staffId` — display **name** is taken from `staff.fullName` (do not send `name`). Use **Staff → List staff** for the name dropdown.\n\n**Notes:**\n- All records use MongoDB `_id`.\n- Product create uses **multipart/form-data** (`image` optional). Fields include `barcode`, `maxStock`, `reorderAt` (min stock).\n- Settings logo upload uses **multipart/form-data** (`logo` optional); path stored as `business.logoUrl`.\n- Sales use `items[]`, server pricing, receipt id `R-{BASE36}`, GRA tax breakdown (multiplier 1.219). Status: `pending` | `completed` | `voided`. Stock decrements only on **completed**. Park carts with `status: pending`; complete via `PATCH /api/sales/:id`. Customers live under `/api/customers` (requires `customers` entitlement).\n- Proformas use `PI-{BASE36}`; no stock impact.\n- Expenses: `E-####` ids; summary + list filters; mark paid via `PATCH .../mark-paid`.\n- Warehouses: hierarchy zone→rack→shelf→bin with composite `fullPath` (e.g. MAIN-A-02-15); optional `managerId`; stock movements at `/api/stock-movements`.\n- **WMS workflows:** Goods Receipt `GR-#####` (`draft→pending_approval→completed`), Goods Issue `GI-#####` (`draft→pending_approval→approved→issued`), Stock Count `SC-#####`, Transfers `draft→pending_approval→in_transit→received`. Approvals Hub links receipt/issue/count/transfer on submit.\n- Audit trail: `GET /api/audit-logs`.\n- Errors: `{ \"message\": \"...\" }` or `{ \"error\": \"...\" }`.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -265,7 +265,7 @@
     },
     {
       "name": "Users",
-      "description": "Requires `users` entitlement. Bearer token from Login.\n\n**Flow:**\n1. **Staff \u2192 Create staff** / **List staff** for the name dropdown (`staffId`)\n2. **Roles \u2192 List roles** \u2014 saves `roleId`\n3. **Create user** with `staffId` (name is copied from staff; do not send `name`)\n\nOptional PATCH fields: `staffId`, `email`, `password`, `roleId`, `categoryIds`, `active`. Sending `name` returns 400.",
+      "description": "Requires `users` entitlement. Bearer token from Login.\n\n**Flow:**\n1. **Staff → Create staff** / **List staff** for the name dropdown (`staffId`)\n2. **Roles → List roles** — saves `roleId`\n3. **Create user** with `staffId` (name is copied from staff; do not send `name`)\n\nOptional PATCH fields: `staffId`, `email`, `password`, `roleId`, `categoryIds`, `active`. Sending `name` returns 400.",
       "item": [
         {
           "name": "List users",
@@ -587,7 +587,7 @@
         },
         {
           "name": "Update settings (admin)",
-          "description": "Requires `settings` entitlement and Bearer token. JSON body for business/receipt fields only. Does not upload a logo file \u2014 use **Upload logo**.",
+          "description": "Requires `settings` entitlement and Bearer token. JSON body for business/receipt fields only. Does not upload a logo file — use **Upload logo**.",
           "request": {
             "auth": {
               "type": "bearer",
@@ -804,7 +804,7 @@
           },
           "response": [
             {
-              "name": "Product unit options \u2014 200",
+              "name": "Product unit options — 200",
               "originalRequest": {
                 "method": "GET",
                 "header": [],
@@ -1371,7 +1371,7 @@
     },
     {
       "name": "Expenses",
-      "description": "Requires `expenses` entitlement and Bearer token from **Auth \u2192 Login**.\n\n**Fields:** `expenseId` (`E-0001`), `date`, `category`, `description`, `reference` (optional), `chartAccount` (derived from category), `amount` (GHS), `status` (`Pending`|`Paid`). No paid-from / payment source field.\n\n**Create:** set `status` to `Paid` or `markPaid: true` to mark paid on create.\n**Mark paid:** `PATCH /api/expenses/:id/mark-paid`.",
+      "description": "Requires `expenses` entitlement and Bearer token from **Auth → Login**.\n\n**Fields:** `expenseId` (`E-0001`), `date`, `category`, `description`, `reference` (optional), `chartAccount` (derived from category), `amount` (GHS), `status` (`Pending`|`Paid`). No paid-from / payment source field.\n\n**Create:** set `status` to `Paid` or `markPaid: true` to mark paid on create.\n**Mark paid:** `PATCH /api/expenses/:id/mark-paid`.",
       "item": [
         {
           "name": "Expenses meta",
@@ -1470,7 +1470,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"date\": \"2026-07-11\",\n  \"category\": \"Utilities\",\n  \"description\": \"Electricity bill \u2014 ECG\",\n  \"amount\": 450,\n  \"reference\": \"ECG-JUL-2026\",\n  \"markPaid\": true\n}"
+              "raw": "{\n  \"date\": \"2026-07-11\",\n  \"category\": \"Utilities\",\n  \"description\": \"Electricity bill — ECG\",\n  \"amount\": 450,\n  \"reference\": \"ECG-JUL-2026\",\n  \"markPaid\": true\n}"
             },
             "url": "{{baseUrl}}/api/expenses"
           },
@@ -1513,7 +1513,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"date\": \"2026-07-10\",\n  \"category\": \"Transport\",\n  \"description\": \"Delivery run \u2014 Tema\",\n  \"amount\": 85,\n  \"reference\": \"\"\n}"
+              "raw": "{\n  \"date\": \"2026-07-10\",\n  \"category\": \"Transport\",\n  \"description\": \"Delivery run — Tema\",\n  \"amount\": 85,\n  \"reference\": \"\"\n}"
             },
             "url": "{{baseUrl}}/api/expenses"
           },
@@ -1561,7 +1561,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"description\": \"Electricity bill \u2014 ECG (updated)\",\n  \"amount\": 475\n}"
+              "raw": "{\n  \"description\": \"Electricity bill — ECG (updated)\",\n  \"amount\": 475\n}"
             },
             "url": "{{baseUrl}}/api/expenses/{{expenseId}}"
           },
@@ -2479,7 +2479,7 @@
     },
     {
       "name": "Staff",
-      "description": "Staff management. Requires `staff` or `payroll` entitlement. Bearer token from Login.\n\n**employeeId** is auto-generated as `EMP-001`, `EMP-002`, \u2026 (do not send it on create).\n**Users:** create a user account from a staff member via **Users \u2192 Create user** (`staffId`). Deleting staff fails if a user is linked.\n**Attendance statuses:** present, absent, late, on_leave.\n**Dates:** YYYY-MM-DD (UTC).\n**History weeks:** week 1 = days 1\u20137 of the month, week 2 = 8\u201314, etc.\n**Departments:** use names from `/api/departments` (or Staff meta). Optional `division` string.",
+      "description": "Staff management. Requires `staff` or `payroll` entitlement. Bearer token from Login.\n\n**employeeId** is auto-generated as `Onyx-001`, `Onyx-002`, … (do not send it on create).\n**Users:** create a user account from a staff member via **Users → Create user** (`staffId`). Deleting staff fails if a user is linked.\n**Attendance statuses:** present, absent, late, on_leave.\n**Dates:** YYYY-MM-DD (UTC).\n**History weeks:** week 1 = days 1–7 of the month, week 2 = 8–14, etc.\n**Departments:** use names from `/api/departments` (or Staff meta). Optional `division` string.",
       "item": [
         {
           "name": "Staff meta",
@@ -2869,7 +2869,7 @@
     },
     {
       "name": "Warehouses",
-      "description": "Requires auth + `warehouses` or `inventory`.\n\n**Frontend modules / screens**\n1. **Warehouse list** \u2014 table/cards from `GET /api/warehouses` (search `q`, filter `status`). Badge default warehouse.\n2. **Warehouse form** \u2014 create/edit: code, name, address, city, phone (address/city/phone required), status, isDefault.\n3. **Locations builder** \u2014 load `GET .../structure` + `GET /meta` (use `layoutPresets.simple`: Zone \u2192 Bin). Tree UI; create via `POST .../locations`.\n4. **Warehouse inventory** \u2014 `GET .../inventory` with product/bin filters; assign bin via `POST .../assign-location`.\n5. **Warehouse history** \u2014 ledger tab using `GET .../history`.\n\n**Recommended layout:** Zone \u2192 Bin only. Products assign to **bins**.\n\nEach request below has a saved **example response**.",
+      "description": "Requires auth + `warehouses` or `inventory`.\n\n**Frontend modules / screens**\n1. **Warehouse list** — table/cards from `GET /api/warehouses` (search `q`, filter `status`). Badge default warehouse.\n2. **Warehouse form** — create/edit: code, name, address, city, phone (address/city/phone required), status, isDefault.\n3. **Locations builder** — load `GET .../structure` + `GET /meta` (use `layoutPresets.simple`: Zone → Bin). Tree UI; create via `POST .../locations`.\n4. **Warehouse inventory** — `GET .../inventory` with product/bin filters; assign bin via `POST .../assign-location`.\n5. **Warehouse history** — ledger tab using `GET .../history`.\n\n**Recommended layout:** Zone → Bin only. Products assign to **bins**.\n\nEach request below has a saved **example response**.",
       "item": [
         {
           "name": "Warehouse meta",
@@ -2890,7 +2890,7 @@
           },
           "response": [
             {
-              "name": "Warehouse meta \u2014 200",
+              "name": "Warehouse meta — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -2916,7 +2916,7 @@
                 }
               ],
               "cookie": [],
-              "body": "{\n  \"statuses\": [\n    \"active\",\n    \"inactive\"\n  ],\n  \"locationTypes\": [\n    \"zone\",\n    \"aisle\",\n    \"rack\",\n    \"shelf\",\n    \"bin\"\n  ],\n  \"storableTypes\": [\n    \"bin\"\n  ],\n  \"allowedParents\": {\n    \"zone\": [\n      null\n    ],\n    \"aisle\": [\n      null,\n      \"zone\"\n    ],\n    \"rack\": [\n      null,\n      \"zone\",\n      \"aisle\"\n    ],\n    \"shelf\": [\n      null,\n      \"zone\",\n      \"aisle\",\n      \"rack\"\n    ],\n    \"bin\": [\n      null,\n      \"zone\",\n      \"aisle\",\n      \"rack\",\n      \"shelf\"\n    ]\n  },\n  \"parentTypeByChild\": {\n    \"zone\": null,\n    \"aisle\": \"zone\",\n    \"rack\": \"zone\",\n    \"shelf\": \"rack\",\n    \"bin\": \"shelf\"\n  },\n  \"layoutPresets\": [\n    {\n      \"id\": \"simple\",\n      \"label\": \"Simple (recommended)\",\n      \"description\": \"Zones with bins \u2014 fits most shops and small warehouses\",\n      \"steps\": [\n        \"zone\",\n        \"bin\"\n      ]\n    },\n    {\n      \"id\": \"flat\",\n      \"label\": \"Flat bins only\",\n      \"description\": \"Named bins directly in the warehouse, no zones\",\n      \"steps\": [\n        \"bin\"\n      ]\n    },\n    {\n      \"id\": \"rack\",\n      \"label\": \"Zone + rack + bin\",\n      \"description\": \"When you have racking but don't track every shelf\",\n      \"steps\": [\n        \"zone\",\n        \"rack\",\n        \"bin\"\n      ]\n    },\n    {\n      \"id\": \"full\",\n      \"label\": \"Full hierarchy\",\n      \"description\": \"Large warehouses: zone \u2192 aisle \u2192 rack \u2192 shelf \u2192 bin\",\n      \"steps\": [\n        \"zone\",\n        \"aisle\",\n        \"rack\",\n        \"shelf\",\n        \"bin\"\n      ]\n    }\n  ],\n  \"recommended\": \"simple\"\n}"
+              "body": "{\n  \"statuses\": [\n    \"active\",\n    \"inactive\"\n  ],\n  \"locationTypes\": [\n    \"zone\",\n    \"aisle\",\n    \"rack\",\n    \"shelf\",\n    \"bin\"\n  ],\n  \"storableTypes\": [\n    \"bin\"\n  ],\n  \"allowedParents\": {\n    \"zone\": [\n      null\n    ],\n    \"aisle\": [\n      null,\n      \"zone\"\n    ],\n    \"rack\": [\n      null,\n      \"zone\",\n      \"aisle\"\n    ],\n    \"shelf\": [\n      null,\n      \"zone\",\n      \"aisle\",\n      \"rack\"\n    ],\n    \"bin\": [\n      null,\n      \"zone\",\n      \"aisle\",\n      \"rack\",\n      \"shelf\"\n    ]\n  },\n  \"parentTypeByChild\": {\n    \"zone\": null,\n    \"aisle\": \"zone\",\n    \"rack\": \"zone\",\n    \"shelf\": \"rack\",\n    \"bin\": \"shelf\"\n  },\n  \"layoutPresets\": [\n    {\n      \"id\": \"simple\",\n      \"label\": \"Simple (recommended)\",\n      \"description\": \"Zones with bins — fits most shops and small warehouses\",\n      \"steps\": [\n        \"zone\",\n        \"bin\"\n      ]\n    },\n    {\n      \"id\": \"flat\",\n      \"label\": \"Flat bins only\",\n      \"description\": \"Named bins directly in the warehouse, no zones\",\n      \"steps\": [\n        \"bin\"\n      ]\n    },\n    {\n      \"id\": \"rack\",\n      \"label\": \"Zone + rack + bin\",\n      \"description\": \"When you have racking but don't track every shelf\",\n      \"steps\": [\n        \"zone\",\n        \"rack\",\n        \"bin\"\n      ]\n    },\n    {\n      \"id\": \"full\",\n      \"label\": \"Full hierarchy\",\n      \"description\": \"Large warehouses: zone → aisle → rack → shelf → bin\",\n      \"steps\": [\n        \"zone\",\n        \"aisle\",\n        \"rack\",\n        \"shelf\",\n        \"bin\"\n      ]\n    }\n  ],\n  \"recommended\": \"simple\"\n}"
             }
           ],
           "description": "**Response 200:** see saved example under this request."
@@ -2940,7 +2940,7 @@
           },
           "response": [
             {
-              "name": "List warehouses \u2014 200",
+              "name": "List warehouses — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -3013,7 +3013,7 @@
           },
           "response": [
             {
-              "name": "Create warehouse \u2014 201",
+              "name": "Create warehouse — 201",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -3088,7 +3088,7 @@
           },
           "response": [
             {
-              "name": "Get warehouse \u2014 200",
+              "name": "Get warehouse — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -3147,7 +3147,7 @@
           },
           "response": [
             {
-              "name": "Update warehouse \u2014 200",
+              "name": "Update warehouse — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -3215,7 +3215,7 @@
           },
           "response": [
             {
-              "name": "Create zone (recommended) \u2014 201",
+              "name": "Create zone (recommended) — 201",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -3296,7 +3296,7 @@
           },
           "response": [
             {
-              "name": "Create bin under zone (recommended) \u2014 201",
+              "name": "Create bin under zone (recommended) — 201",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -3378,7 +3378,7 @@
           },
           "response": [
             {
-              "name": "Create flat bin (no zone) \u2014 201",
+              "name": "Create flat bin (no zone) — 201",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -3450,7 +3450,7 @@
             "url": "{{baseUrl}}/api/warehouses/meta"
           },
           "response": [],
-          "description": "Marker only \u2014 use the requests below if you need aisle/rack/shelf."
+          "description": "Marker only — use the requests below if you need aisle/rack/shelf."
         },
         {
           "name": "Create aisle (optional)",
@@ -3480,7 +3480,7 @@
           },
           "response": [
             {
-              "name": "Create aisle (optional) \u2014 201",
+              "name": "Create aisle (optional) — 201",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -3561,7 +3561,7 @@
           },
           "response": [
             {
-              "name": "Create rack (optional) \u2014 201",
+              "name": "Create rack (optional) — 201",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -3642,7 +3642,7 @@
           },
           "response": [
             {
-              "name": "Create shelf (optional) \u2014 201",
+              "name": "Create shelf (optional) — 201",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -3723,7 +3723,7 @@
           },
           "response": [
             {
-              "name": "Create bin under shelf (optional) \u2014 201",
+              "name": "Create bin under shelf (optional) — 201",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -3796,7 +3796,7 @@
           },
           "response": [
             {
-              "name": "List locations \u2014 200",
+              "name": "List locations — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -3846,7 +3846,7 @@
           },
           "response": [
             {
-              "name": "Warehouse structure \u2014 200",
+              "name": "Warehouse structure — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -3896,7 +3896,7 @@
           },
           "response": [
             {
-              "name": "Warehouse inventory \u2014 200",
+              "name": "Warehouse inventory — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -3946,7 +3946,7 @@
           },
           "response": [
             {
-              "name": "Warehouse history \u2014 200",
+              "name": "Warehouse history — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -4005,7 +4005,7 @@
           },
           "response": [
             {
-              "name": "Assign product location \u2014 200",
+              "name": "Assign product location — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -4064,7 +4064,7 @@
           },
           "response": [
             {
-              "name": "Delete warehouse \u2014 204",
+              "name": "Delete warehouse — 204",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -4094,7 +4094,7 @@
     },
     {
       "name": "Stock Movements",
-      "description": "Warehouse stock ledger. Auth + `inventory` or `warehouses`.\n\n**Frontend modules / screens**\n1. **Movements list** \u2014 `GET /api/stock-movements` filters: warehouseId, productId, type, from, to.\n2. **Record movement** \u2014 form driven by `GET /meta` \u2192 `creatableTypes`. Submit `POST /` \u2192 response wraps `{ movement, warehouseStock, toWarehouseStock }`.\n3. **Movement detail** \u2014 `GET /:id` with populated product/warehouse/location.\n\n**Types:** stock_in, stock_out, adjustment, opening_stock, damaged, returned, internal_move (transfer_out/in are system-generated). Default syncs `Product.stockQuantity` except transfers/internal_move; pass `syncProductStock:false` for warehouse-only.\n\nEach request below has a saved **example response**.",
+      "description": "Warehouse stock ledger. Auth + `inventory` or `warehouses`.\n\n**Frontend modules / screens**\n1. **Movements list** — `GET /api/stock-movements` filters: warehouseId, productId, type, from, to.\n2. **Record movement** — form driven by `GET /meta` → `creatableTypes`. Submit `POST /` → response wraps `{ movement, warehouseStock, toWarehouseStock }`.\n3. **Movement detail** — `GET /:id` with populated product/warehouse/location.\n\n**Types:** stock_in, stock_out, adjustment, opening_stock, damaged, returned, internal_move (transfer_out/in are system-generated). Default syncs `Product.stockQuantity` except transfers/internal_move; pass `syncProductStock:false` for warehouse-only.\n\nEach request below has a saved **example response**.",
       "item": [
         {
           "name": "Stock movement meta",
@@ -4115,7 +4115,7 @@
           },
           "response": [
             {
-              "name": "Stock movement meta \u2014 200",
+              "name": "Stock movement meta — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -4165,7 +4165,7 @@
           },
           "response": [
             {
-              "name": "List stock movements \u2014 200",
+              "name": "List stock movements — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -4224,7 +4224,7 @@
           },
           "response": [
             {
-              "name": "Stock in \u2014 201",
+              "name": "Stock in — 201",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -4308,7 +4308,7 @@
           },
           "response": [
             {
-              "name": "Stock out \u2014 201",
+              "name": "Stock out — 201",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -4376,7 +4376,7 @@
           },
           "response": [
             {
-              "name": "Adjustment \u2014 201",
+              "name": "Adjustment — 201",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -4444,7 +4444,7 @@
           },
           "response": [
             {
-              "name": "Internal move \u2014 201",
+              "name": "Internal move — 201",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -4503,7 +4503,7 @@
           },
           "response": [
             {
-              "name": "Get stock movement \u2014 200",
+              "name": "Get stock movement — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -4538,7 +4538,7 @@
     },
     {
       "name": "Warehouse Transfers",
-      "description": "Auth + `warehouse_transfers` | `warehouses` | `inventory`.\n\n**Workflow:** draft \u2192 pending_approval \u2192 in_transit \u2192 received (or cancelled).\n\n**Frontend modules / screens**\n1. **Transfers list** \u2014 status chips from `GET /meta`; list with filters status / fromWarehouseId / toWarehouseId.\n2. **Create / edit draft** \u2014 multi-line form; save draft or `submit: true`.\n3. **Transfer detail + actions** \u2014 Submit / Approve / Reject / Receive / Cancel (enable by status).\n4. Deep-link Approvals Hub when `approval` is present.\n\nApprove deducts source stock; receive credits destination. Does **not** change `Product.stockQuantity`.\n\nEach request below has a saved **example response**.",
+      "description": "Auth + `warehouse_transfers` | `warehouses` | `inventory`.\n\n**Workflow:** draft → pending_approval → in_transit → received (or cancelled).\n\n**Frontend modules / screens**\n1. **Transfers list** — status chips from `GET /meta`; list with filters status / fromWarehouseId / toWarehouseId.\n2. **Create / edit draft** — multi-line form; save draft or `submit: true`.\n3. **Transfer detail + actions** — Submit / Approve / Reject / Receive / Cancel (enable by status).\n4. Deep-link Approvals Hub when `approval` is present.\n\nApprove deducts source stock; receive credits destination. Does **not** change `Product.stockQuantity`.\n\nEach request below has a saved **example response**.",
       "item": [
         {
           "name": "Transfer meta",
@@ -4559,7 +4559,7 @@
           },
           "response": [
             {
-              "name": "Transfer meta \u2014 200",
+              "name": "Transfer meta — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -4609,7 +4609,7 @@
           },
           "response": [
             {
-              "name": "List transfers \u2014 200",
+              "name": "List transfers — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -4668,7 +4668,7 @@
           },
           "response": [
             {
-              "name": "Create transfer (draft) \u2014 201",
+              "name": "Create transfer (draft) — 201",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -4752,7 +4752,7 @@
           },
           "response": [
             {
-              "name": "Create and submit transfer \u2014 201",
+              "name": "Create and submit transfer — 201",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -4827,7 +4827,7 @@
           },
           "response": [
             {
-              "name": "Get transfer \u2014 200",
+              "name": "Get transfer — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -4886,7 +4886,7 @@
           },
           "response": [
             {
-              "name": "Update draft transfer \u2014 200",
+              "name": "Update draft transfer — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -4945,7 +4945,7 @@
           },
           "response": [
             {
-              "name": "Submit transfer \u2014 200",
+              "name": "Submit transfer — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -5004,7 +5004,7 @@
           },
           "response": [
             {
-              "name": "Approve transfer \u2014 200",
+              "name": "Approve transfer — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -5072,7 +5072,7 @@
           },
           "response": [
             {
-              "name": "Reject transfer \u2014 200",
+              "name": "Reject transfer — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -5131,7 +5131,7 @@
           },
           "response": [
             {
-              "name": "Receive transfer \u2014 200",
+              "name": "Receive transfer — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -5181,7 +5181,7 @@
           },
           "response": [
             {
-              "name": "Cancel transfer \u2014 200",
+              "name": "Cancel transfer — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -5216,7 +5216,7 @@
     },
     {
       "name": "Approvals",
-      "description": "Central Approvals Hub. Auth + `approvals`.\n\n**Frontend modules / screens**\n1. **Summary strip** \u2014 `GET /summary` \u2192 pending / approved / rejected counts.\n2. **Inbox list** \u2014 `GET /?status=pending` (+ type, q).\n3. **Approval detail** \u2014 `GET /:id` embeds `entity` for `warehouse_transfer`.\n4. **Decide** \u2014 `POST /:id/approve` or `reject` \u2192 `{ approval, transfer? }`.\n5. Manual create for purchase/expense/discount/credit (not warehouse_transfer \u2014 use transfer submit).\n\nStatuses: pending \u2192 approved | rejected.\n\nEach request below has a saved **example response**.",
+      "description": "Central Approvals Hub. Auth + `approvals`.\n\n**Frontend modules / screens**\n1. **Summary strip** — `GET /summary` → pending / approved / rejected counts.\n2. **Inbox list** — `GET /?status=pending` (+ type, q).\n3. **Approval detail** — `GET /:id` embeds `entity` for `warehouse_transfer`.\n4. **Decide** — `POST /:id/approve` or `reject` → `{ approval, transfer? }`.\n5. Manual create for purchase/expense/discount/credit (not warehouse_transfer — use transfer submit).\n\nStatuses: pending → approved | rejected.\n\nEach request below has a saved **example response**.",
       "item": [
         {
           "name": "Approvals meta",
@@ -5237,7 +5237,7 @@
           },
           "response": [
             {
-              "name": "Approvals meta \u2014 200",
+              "name": "Approvals meta — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -5287,7 +5287,7 @@
           },
           "response": [
             {
-              "name": "Approvals summary \u2014 200",
+              "name": "Approvals summary — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -5337,7 +5337,7 @@
           },
           "response": [
             {
-              "name": "List approvals \u2014 200",
+              "name": "List approvals — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -5396,7 +5396,7 @@
           },
           "response": [
             {
-              "name": "Create approval (expense) \u2014 201",
+              "name": "Create approval (expense) — 201",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -5471,7 +5471,7 @@
           },
           "response": [
             {
-              "name": "Get approval \u2014 200",
+              "name": "Get approval — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -5530,7 +5530,7 @@
           },
           "response": [
             {
-              "name": "Approve request \u2014 200",
+              "name": "Approve request — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -5598,7 +5598,7 @@
           },
           "response": [
             {
-              "name": "Reject request \u2014 200",
+              "name": "Reject request — 200",
               "originalRequest": {
                 "auth": {
                   "type": "bearer",
@@ -5642,7 +5642,7 @@
     },
     {
       "name": "Goods Receipts",
-      "description": "Auth + `goods_receipt` | `warehouses` | `inventory`.\n\n**Workflow:** draft \u2192 pending_approval \u2192 completed (or rejected/cancelled).\nStore keeper creates & submits; manager approves \u2192 warehouse + product stock increases.\nApprove via this folder or Approvals Hub (`type: goods_receipt`).",
+      "description": "Auth + `goods_receipt` | `warehouses` | `inventory`.\n\n**Workflow:** draft → pending_approval → completed (or rejected/cancelled).\nStore keeper creates & submits; manager approves → warehouse + product stock increases.\nApprove via this folder or Approvals Hub (`type: goods_receipt`).",
       "item": [
         {
           "name": "Receipt meta",
@@ -5867,7 +5867,7 @@
     },
     {
       "name": "Goods Issues",
-      "description": "Auth + `goods_issue` | `warehouses` | `inventory`.\n\n**Workflow:** draft \u2192 pending_approval \u2192 approved \u2192 issued.\nRequester submits \u2192 manager approves \u2192 store keeper `POST .../issue` reduces stock.",
+      "description": "Auth + `goods_issue` | `warehouses` | `inventory`.\n\n**Workflow:** draft → pending_approval → approved → issued.\nRequester submits → manager approves → store keeper `POST .../issue` reduces stock.",
       "item": [
         {
           "name": "Issue meta",
@@ -6121,7 +6121,7 @@
     },
     {
       "name": "Stock Counts",
-      "description": "Auth + `stock_counts` | `warehouses` | `inventory`.\n\n**Workflow:** draft/counting \u2192 pending_approval \u2192 completed.\nSeeds lines from warehouse stock; PATCH counted quantities; submit; manager approve applies signed adjustments.",
+      "description": "Auth + `stock_counts` | `warehouses` | `inventory`.\n\n**Workflow:** draft/counting → pending_approval → completed.\nSeeds lines from warehouse stock; PATCH counted quantities; submit; manager approve applies signed adjustments.",
       "item": [
         {
           "name": "Count meta",

@@ -44,7 +44,7 @@ async function aggregateSalesByDate(start, end) {
   const rows = await Sale.aggregate([
     {
       $match: {
-        status: { $ne: "voided" },
+        status: "completed",
         timestamp: { $gte: start, $lte: end },
       },
     },
@@ -88,7 +88,7 @@ async function countActiveCustomers(start, end) {
   const rows = await Sale.aggregate([
     {
       $match: {
-        status: { $ne: "voided" },
+        status: "completed",
         timestamp: { $gte: start, $lte: end },
         customer: { $nin: [WALK_IN_CUSTOMER, "", null] },
       },
@@ -120,7 +120,7 @@ async function sumUnitsSold(start, end) {
   const rows = await Sale.aggregate([
     {
       $match: {
-        status: { $ne: "voided" },
+        status: "completed",
         timestamp: { $gte: start, $lte: end },
       },
     },
@@ -178,19 +178,19 @@ async function getMetrics() {
     activeCustomersPrior30d,
   ] = await Promise.all([
     aggregateSalesRevenue({
-      status: { $ne: "voided" },
+      status: "completed",
       timestamp: { $gte: todayStart, $lte: todayEnd },
     }),
     aggregateSalesRevenue({
-      status: { $ne: "voided" },
+      status: "completed",
       timestamp: { $gte: yesterdayStart, $lte: yesterdayEnd },
     }),
     aggregateSalesRevenue({
-      status: { $ne: "voided" },
+      status: "completed",
       timestamp: { $gte: last7Start, $lte: todayEnd },
     }),
     aggregateSalesRevenue({
-      status: { $ne: "voided" },
+      status: "completed",
       timestamp: { $gte: prior7Start, $lte: prior7End },
     }),
     sumInventoryUnits(),
@@ -254,7 +254,7 @@ async function getTopProducts(days, limit) {
   const items = await Sale.aggregate([
     {
       $match: {
-        status: { $ne: "voided" },
+        status: "completed",
         timestamp: { $gte: start, $lte: end },
       },
     },
@@ -286,7 +286,7 @@ async function getTopProducts(days, limit) {
 }
 
 async function getRecentSales(limit) {
-  const sales = await Sale.find({ status: { $ne: "voided" } })
+  const sales = await Sale.find({ status: "completed" })
     .sort({ timestamp: -1 })
     .limit(limit)
     .select(
@@ -398,7 +398,7 @@ async function getLegacySummary() {
     Supplier.countDocuments({ status: "active" }),
     Purchase.countDocuments(),
     Sale.aggregate([
-      { $match: { status: { $ne: "voided" } } },
+      { $match: { status: "completed" } },
       {
         $group: {
           _id: null,

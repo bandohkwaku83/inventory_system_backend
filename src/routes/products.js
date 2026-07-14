@@ -145,7 +145,7 @@ router.post(
       }
 
       const reorder = parseRequiredNumber(
-        req.body?.reorderAt ?? req.body?.reorderQuantity,
+        req.body?.reorderAt ?? req.body?.reorderQuantity ?? req.body?.minStock,
         "Reorder threshold"
       );
       if (reorder.error) {
@@ -155,6 +155,25 @@ router.post(
       if (!Number.isInteger(reorder.value) || reorder.value < 0) {
         res.status(400).json({ error: "Reorder threshold must be a non-negative integer" });
         return;
+      }
+
+      let maxStock = null;
+      if (req.body?.maxStock != null && req.body?.maxStock !== "") {
+        const max = parseRequiredNumber(req.body.maxStock, "Maximum stock");
+        if (max.error) {
+          res.status(400).json({ error: max.error });
+          return;
+        }
+        if (!Number.isInteger(max.value) || max.value < 0) {
+          res.status(400).json({ error: "Maximum stock must be a non-negative integer" });
+          return;
+        }
+        maxStock = max.value;
+      }
+
+      let barcode = null;
+      if (req.body?.barcode != null && String(req.body.barcode).trim() !== "") {
+        barcode = String(req.body.barcode).trim().slice(0, 64);
       }
 
       let imageUrl = null;
@@ -176,6 +195,8 @@ router.post(
         unit: rawUnit,
         stockQuantity: stock.value,
         reorderAt: reorder.value,
+        maxStock,
+        barcode,
         imageUrl,
       });
 
@@ -183,7 +204,7 @@ router.post(
 
       res.status(201).json(product.toJSON());
     } catch (err) {
-      if (err.code === 11000 && err.keyPattern && err.keyPattern.sku) {
+      if (err.code === 11000 && err.keyPattern && (err.keyPattern.sku || err.keyPattern.barcode)) {
         res.status(409).json({ error: "This SKU / barcode already exists" });
         return;
       }
@@ -424,9 +445,9 @@ router.patch(
         updates.stockQuantity = stock.value;
       }
 
-      if (hasField(body, "reorderAt") || hasField(body, "reorderQuantity")) {
+      if (hasField(body, "reorderAt") || hasField(body, "reorderQuantity") || hasField(body, "minStock")) {
         const reorder = parseRequiredNumber(
-          body.reorderAt ?? body.reorderQuantity,
+          body.reorderAt ?? body.reorderQuantity ?? body.minStock,
           "Reorder threshold"
         );
         if (reorder.error) {
@@ -438,6 +459,31 @@ router.patch(
           return;
         }
         updates.reorderAt = reorder.value;
+      }
+
+      if (hasField(body, "maxStock")) {
+        if (body.maxStock === null || body.maxStock === "") {
+          updates.maxStock = null;
+        } else {
+          const max = parseRequiredNumber(body.maxStock, "Maximum stock");
+          if (max.error) {
+            res.status(400).json({ error: max.error });
+            return;
+          }
+          if (!Number.isInteger(max.value) || max.value < 0) {
+            res.status(400).json({ error: "Maximum stock must be a non-negative integer" });
+            return;
+          }
+          updates.maxStock = max.value;
+        }
+      }
+
+      if (hasField(body, "barcode")) {
+        if (body.barcode === null || String(body.barcode).trim() === "") {
+          updates.barcode = null;
+        } else {
+          updates.barcode = String(body.barcode).trim().slice(0, 64);
+        }
       }
 
       if (req.file) {
@@ -458,7 +504,7 @@ router.patch(
       try {
         await product.save({ validateBeforeSave: true });
       } catch (err) {
-        if (err.code === 11000 && err.keyPattern?.sku) {
+        if (err.code === 11000 && (err.keyPattern?.sku || err.keyPattern?.barcode)) {
           res.status(409).json({ error: "This SKU / barcode already exists" });
           return;
         }

@@ -12,15 +12,6 @@ const STAFF_RELATIONSHIPS = [
   "other",
 ];
 
-const STAFF_DEPARTMENTS = [
-  "sales",
-  "stock",
-  "delivery",
-  "admin",
-  "finance",
-  "other",
-];
-
 const STAFF_EMPLOYMENT_TYPES = [
   "full_time",
   "part_time",
@@ -126,7 +117,13 @@ const staffSchema = new mongoose.Schema(
     },
     department: {
       type: String,
-      enum: STAFF_DEPARTMENTS,
+      trim: true,
+      maxlength: 120,
+    },
+    division: {
+      type: String,
+      trim: true,
+      maxlength: 120,
     },
     hireDate: {
       type: Date,
@@ -197,6 +194,5 @@ const Staff = mongoose.model("Staff", staffSchema);
 module.exports = Staff;
 module.exports.STAFF_GENDERS = STAFF_GENDERS;
 module.exports.STAFF_RELATIONSHIPS = STAFF_RELATIONSHIPS;
-module.exports.STAFF_DEPARTMENTS = STAFF_DEPARTMENTS;
 module.exports.STAFF_EMPLOYMENT_TYPES = STAFF_EMPLOYMENT_TYPES;
 module.exports.STAFF_STATUSES = STAFF_STATUSES;

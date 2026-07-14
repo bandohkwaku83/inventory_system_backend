@@ -2,13 +2,36 @@ const mongoose = require("mongoose");
 
 const UNITS = [
   "units",
+  "pieces",
+  "each",
   "kg",
   "g",
+  "lb",
+  "oz",
   "liters",
   "ml",
+  "gallon",
   "box",
+  "boxes",
   "pack",
+  "packs",
+  "carton",
+  "case",
+  "bag",
+  "bottle",
+  "can",
+  "jar",
+  "roll",
+  "sheet",
+  "pair",
+  "set",
+  "bundle",
   "dozen",
+  "pallet",
+  "meter",
+  "cm",
+  "ft",
+  "inch",
 ];
 
 const productSchema = new mongoose.Schema(
@@ -63,10 +86,23 @@ const productSchema = new mongoose.Schema(
       required: true,
       min: 0,
     },
+    /** Minimum / reorder threshold (alias of classic reorderAt) */
     reorderAt: {
       type: Number,
       required: true,
       min: 0,
+    },
+    /** Optional maximum stock ceiling for warehouse planning */
+    maxStock: {
+      type: Number,
+      min: 0,
+      default: null,
+    },
+    barcode: {
+      type: String,
+      trim: true,
+      maxlength: 64,
+      default: null,
     },
     imageUrl: {
       type: String,
@@ -80,6 +116,7 @@ const productSchema = new mongoose.Schema(
 productSchema.index({ category: 1 });
 productSchema.index({ name: "text", description: "text" });
 productSchema.index({ sku: 1 }, { unique: true, sparse: true });
+productSchema.index({ barcode: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model("Product", productSchema);
 module.exports.PRODUCT_UNITS = UNITS;

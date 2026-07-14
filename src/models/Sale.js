@@ -97,6 +97,12 @@ const saleSchema = new mongoose.Schema(
       maxlength: 200,
       default: "Walk-in",
     },
+    customerId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Customer",
+      index: true,
+      default: null,
+    },
     servedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -131,7 +137,7 @@ const saleSchema = new mongoose.Schema(
     },
     paymentMethod: {
       type: String,
-      enum: ["Cash", "Mobile Money"],
+      enum: ["Cash", "Mobile Money", "Credit"],
       required: true,
       index: true,
     },
@@ -150,8 +156,14 @@ const saleSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["completed", "voided"],
+      enum: ["pending", "completed", "voided"],
       default: "completed",
+      index: true,
+    },
+    /** True once stock was decremented for this sale (completed path); prevents double decrement. */
+    stockApplied: {
+      type: Boolean,
+      default: false,
       index: true,
     },
     notes: {

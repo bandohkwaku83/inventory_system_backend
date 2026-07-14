@@ -6,10 +6,10 @@ const User = require("../models/User");
 const {
   STAFF_GENDERS,
   STAFF_RELATIONSHIPS,
-  STAFF_DEPARTMENTS,
   STAFF_EMPLOYMENT_TYPES,
   STAFF_STATUSES,
 } = require("../models/Staff");
+const Department = require("../models/Department");
 const { requireAuth, requireEntitlement } = require("../middleware/auth");
 
 const router = express.Router();
@@ -178,13 +178,12 @@ function buildStaffPayload(body, { partial = false } = {}) {
 
   if (hasField(body, "department")) {
     const department = str(body, "department");
-    if (!department) {
-      updates.department = undefined;
-    } else if (!STAFF_DEPARTMENTS.includes(department)) {
-      return { error: `department must be one of: ${STAFF_DEPARTMENTS.join(", ")}` };
-    } else {
-      updates.department = department;
-    }
+    updates.department = department || undefined;
+  }
+
+  if (hasField(body, "division")) {
+    const division = str(body, "division");
+    updates.division = division || undefined;
   }
 
   if (hasField(body, "hireDate") || !partial) {
@@ -245,14 +244,22 @@ function buildStaffPayload(body, { partial = false } = {}) {
   return { value: updates };
 }
 
-router.get("/meta", (_req, res) => {
-  res.json({
-    genders: STAFF_GENDERS,
-    relationships: STAFF_RELATIONSHIPS,
-    departments: STAFF_DEPARTMENTS,
-    employmentTypes: STAFF_EMPLOYMENT_TYPES,
-    statuses: STAFF_STATUSES,
-  });
+router.get("/meta", async (_req, res, next) => {
+  try {
+    const departments = await Department.find()
+      .sort({ name: 1 })
+      .select("name divisions.name")
+      .lean();
+    res.json({
+      genders: STAFF_GENDERS,
+      relationships: STAFF_RELATIONSHIPS,
+      departments,
+      employmentTypes: STAFF_EMPLOYMENT_TYPES,
+      statuses: STAFF_STATUSES,
+    });
+  } catch (err) {
+    next(err);
+  }
 });
 
 router.get("/summary", async (req, res, next) => {
@@ -306,8 +313,11 @@ router.get("/", async (req, res, next) => {
     if (req.query.status && STAFF_STATUSES.includes(req.query.status)) {
       filter.status = req.query.status;
     }
-    if (req.query.department && STAFF_DEPARTMENTS.includes(req.query.department)) {
-      filter.department = req.query.department;
+    if (typeof req.query.department === "string" && req.query.department.trim()) {
+      filter.department = req.query.department.trim();
+    }
+    if (typeof req.query.division === "string" && req.query.division.trim()) {
+      filter.division = req.query.division.trim();
     }
     const q = typeof req.query.q === "string" ? req.query.q.trim() : "";
     if (q) {
@@ -327,16 +337,18 @@ router.get("/", async (req, res, next) => {
   }
 });
 
+const STAFF_ID_PREFIX = "ONYX-STAFF-";
+
 async function nextEmployeeId() {
-  const docs = await Staff.find({ employeeId: /^EMP-\d+$/i })
+  const docs = await Staff.find({ employeeId: new RegExp(`^${STAFF_ID_PREFIX}\\d+$`, "i") })
     .select("employeeId")
     .lean();
   let max = 0;
   for (const d of docs) {
-    const n = Number.parseInt(String(d.employeeId).slice(4), 10);
+    const n = Number.parseInt(String(d.employeeId).slice(STAFF_ID_PREFIX.length), 10);
     if (Number.isFinite(n) && n > max) max = n;
   }
-  return `EMP-${String(max + 1).padStart(3, "0")}`;
+  return `${STAFF_ID_PREFIX}${String(max + 1).padStart(3, "0")}`;
 }
 
 router.post("/", async (req, res, next) => {

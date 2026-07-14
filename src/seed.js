@@ -1,12 +1,24 @@
 const bcrypt = require("bcryptjs");
 const Category = require("./models/Category");
+const Department = require("./models/Department");
 const User = require("./models/User");
 const Role = require("./models/Role");
 const Settings = require("./models/Settings");
+const Warehouse = require("./models/Warehouse");
 const { SETTINGS_DEFAULTS } = require("./models/Settings");
 const { ALL_ENTITLEMENT_KEYS } = require("./constants/entitlements");
 
 const DEFAULT_CATEGORIES = ["Lighting", "Sanitary Ware", "General"];
+
+const DEFAULT_DEPARTMENTS = [
+  { name: "Technical", divisions: ["Frontend", "Backend", "Sound"] },
+  { name: "Media", divisions: ["Production", "Editing"] },
+  { name: "Sales", divisions: ["Retail", "Wholesale"] },
+  { name: "Stock", divisions: ["Receiving", "Dispatch"] },
+  { name: "Delivery", divisions: [] },
+  { name: "Admin", divisions: ["HR", "Operations"] },
+  { name: "Finance", divisions: ["Accounts", "Payroll"] },
+];
 
 const DEFAULT_ROLES = [
   {
@@ -14,6 +26,71 @@ const DEFAULT_ROLES = [
     name: "Administrator",
     description: "Full access to all features",
     entitlements: ALL_ENTITLEMENT_KEYS,
+    isSystem: true,
+  },
+  {
+    slug: "warehouse_manager",
+    name: "Warehouse Manager",
+    description: "Approve requests and manage inventory across warehouses",
+    entitlements: [
+      "dashboard",
+      "charts",
+      "products",
+      "inventory",
+      "categories",
+      "suppliers",
+      "purchases",
+      "warehouses",
+      "warehouse_transfers",
+      "goods_receipt",
+      "goods_issue",
+      "stock_counts",
+      "all_categories",
+      "approvals",
+      "audit_log",
+      "sales_reports",
+    ],
+    isSystem: true,
+  },
+  {
+    slug: "store_keeper",
+    name: "Store Keeper",
+    description: "Receive goods, pick and issue stock, perform cycle counts",
+    entitlements: [
+      "dashboard",
+      "products",
+      "inventory",
+      "warehouses",
+      "warehouse_transfers",
+      "goods_receipt",
+      "goods_issue",
+      "stock_counts",
+      "suppliers",
+    ],
+    isSystem: true,
+  },
+  {
+    slug: "requester",
+    name: "Requester",
+    description: "Request products from warehouses",
+    entitlements: ["dashboard", "products", "inventory", "goods_issue"],
+    isSystem: true,
+  },
+  {
+    slug: "auditor",
+    name: "Auditor",
+    description: "View reports, movement history, and audit trail",
+    entitlements: [
+      "dashboard",
+      "charts",
+      "products",
+      "inventory",
+      "warehouses",
+      "sales_reports",
+      "receipts",
+      "gra_reports",
+      "audit_log",
+    ],
     isSystem: true,
   },
   {
@@ -82,6 +159,21 @@ async function seedCategories() {
   }
 }
 
+async function seedDepartments() {
+  for (const dept of DEFAULT_DEPARTMENTS) {
+    await Department.updateOne(
+      { name: dept.name },
+      {
+        $setOnInsert: {
+          name: dept.name,
+          divisions: dept.divisions.map((name) => ({ name })),
+        },
+      },
+      { upsert: true }
+    );
+  }
+}
+
 async function seedSettings() {
   await Settings.updateOne(
     { _id: "app" },
@@ -116,6 +208,28 @@ async function seedRoles() {
     { slug: "admin" },
     { $set: { entitlements: ALL_ENTITLEMENT_KEYS } }
   );
+
+  // Keep WMS system roles in sync when entitlements evolve.
+  for (const slug of [
+    "warehouse_manager",
+    "store_keeper",
+    "requester",
+    "auditor",
+  ]) {
+    const role = DEFAULT_ROLES.find((r) => r.slug === slug);
+    if (!role) continue;
+    await Role.updateOne(
+      { slug },
+      {
+        $set: {
+          name: role.name,
+          description: role.description,
+          entitlements: role.entitlements,
+          isSystem: true,
+        },
+      }
+    );
+  }
 }
 
 async function migrateLegacyUsers() {
@@ -198,6 +312,22 @@ async function seedUsers(defaultPassword) {
   await migrateLegacyUsers();
 }
 
+async function seedDefaultWarehouse() {
+  const count = await Warehouse.countDocuments();
+  if (count > 0) return;
+
+  await Warehouse.create({
+    code: "MAIN",
+    name: "Main Warehouse",
+    description: "Default primary warehouse",
+    address: "Main Street",
+    city: "Accra",
+    phone: "+233 00 000 0000",
+    isDefault: true,
+    status: "active",
+  });
+}
+
 /**
  * Idempotent seed for categories, settings, roles, and default users.
  */
@@ -206,14 +336,23 @@ async function runSeed() {
     process.env.SEED_DEFAULT_PASSWORD || "ChangeMe123!";
 
   await seedCategories();
+  await seedDepartments();
   await seedSettings();
   await seedRoles();
   await seedAdminUser();
   await seedUsers(defaultPassword);
+  await seedDefaultWarehouse();
 
   console.log(
     `Seed complete (default user password: ${defaultPassword === process.env.SEED_DEFAULT_PASSWORD ? "from SEED_DEFAULT_PASSWORD" : "ChangeMe123!"})`
   );
 }
 
-module.exports = { runSeed, DEFAULT_CATEGORIES, DEFAULT_ROLES, ADMIN_USER, DEFAULT_USERS };
+module.exports = {
+  runSeed,
+  DEFAULT_CATEGORIES,
+  DEFAULT_DEPARTMENTS,
+  DEFAULT_ROLES,
+  ADMIN_USER,
+  DEFAULT_USERS,
+};

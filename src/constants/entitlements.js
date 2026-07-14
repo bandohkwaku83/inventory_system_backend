@@ -16,6 +16,11 @@ const ENTITLEMENT_GROUPS = [
       { key: "price_list", label: "Price List", description: "View and export price lists" },
       { key: "suppliers", label: "Suppliers", description: "Manage suppliers" },
       { key: "purchases", label: "Purchases", description: "Record purchase orders" },
+      { key: "warehouses", label: "Warehouses", description: "Manage warehouses and storage locations" },
+      { key: "warehouse_transfers", label: "Warehouse Transfers", description: "Create and manage warehouse stock transfers" },
+      { key: "goods_receipt", label: "Goods Receipt", description: "Receive supplier deliveries into warehouse stock" },
+      { key: "goods_issue", label: "Goods Issue", description: "Request, pick, and issue stock from warehouses" },
+      { key: "stock_counts", label: "Stock Counts", description: "Cycle counts and inventory variance adjustments" },
       { key: "all_categories", label: "All categories", description: "Access every shop section (not restricted by category assignment)" },
     ],
   },
@@ -42,6 +47,7 @@ const ENTITLEMENT_GROUPS = [
     group: "PEOPLE",
     items: [
       { key: "staff", label: "Staff", description: "Manage staff members" },
+      { key: "departments", label: "Departments", description: "Manage departments and divisions" },
       { key: "payroll", label: "Payroll", description: "Manage staff payroll" },
       { key: "staff_attendance", label: "Staff Attendance", description: "Track attendance records" },
       { key: "users", label: "Users", description: "Manage system users" },
@@ -52,6 +58,8 @@ const ENTITLEMENT_GROUPS = [
     items: [
       { key: "settings", label: "Settings", description: "Configure business and system settings" },
       { key: "manage_roles", label: "Manage roles", description: "Create and edit user roles and permissions" },
+      { key: "approvals", label: "Approvals", description: "Review and decide approval requests" },
+      { key: "audit_log", label: "Audit Log", description: "View system audit trail of user actions" },
     ],
   },
 ];

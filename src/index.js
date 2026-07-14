@@ -27,6 +27,7 @@ const {
   SUPPLIER_STATUSES,
 } = require("./models/Supplier");
 const salesRouter = require("./routes/sales");
+const { router: customersRouter } = require("./routes/customers");
 const authRouter = require("./routes/auth");
 const usersRouter = require("./routes/users");
 const rolesRouter = require("./routes/roles");
@@ -35,8 +36,17 @@ const proformasRouter = require("./routes/proformas");
 const reportsRouter = require("./routes/reports");
 const dashboardRouter = require("./routes/dashboard");
 const staffRouter = require("./routes/staff");
+const { router: departmentsRouter } = require("./routes/departments");
 const attendanceRouter = require("./routes/attendance");
 const expensesRouter = require("./routes/expenses");
+const { router: warehousesRouter } = require("./routes/warehouses");
+const { router: stockMovementsRouter } = require("./routes/stockMovements");
+const { router: transfersRouter } = require("./routes/transfers");
+const { router: approvalsRouter } = require("./routes/approvals");
+const { router: goodsReceiptsRouter } = require("./routes/goodsReceipts");
+const { router: goodsIssuesRouter } = require("./routes/goodsIssues");
+const { router: stockCountsRouter } = require("./routes/stockCounts");
+const { router: auditLogsRouter } = require("./routes/auditLogs");
 
 const app = express();
 const PORT = Number(process.env.PORT) || 8000;
@@ -53,7 +63,11 @@ app.use(
   cors({
     origin: CORS_ORIGIN,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "Idempotency-Key",
+    ],
   })
 );
 app.use(express.json());
@@ -72,8 +86,17 @@ app.use("/api/proformas", proformasRouter);
 app.use("/api/reports", reportsRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/staff", staffRouter);
+app.use("/api/departments", departmentsRouter);
 app.use("/api/attendance", attendanceRouter);
 app.use("/api/expenses", expensesRouter);
+app.use("/api/warehouses", warehousesRouter);
+app.use("/api/stock-movements", stockMovementsRouter);
+app.use("/api/warehouse-transfers", transfersRouter);
+app.use("/api/approvals", approvalsRouter);
+app.use("/api/goods-receipts", goodsReceiptsRouter);
+app.use("/api/goods-issues", goodsIssuesRouter);
+app.use("/api/stock-counts", stockCountsRouter);
+app.use("/api/audit-logs", auditLogsRouter);
 
 app.get("/api", (_req, res) => {
   res.json({
@@ -95,6 +118,9 @@ app.get("/api", (_req, res) => {
       purchases: "/api/purchases",
       purchasesSummary: "/api/purchases/summary",
       sales: "/api/sales",
+      salePatch: "/api/sales/:id (PATCH)",
+      saleVoid: "/api/sales/:id/void (PATCH)",
+      customers: "/api/customers",
       proformas: "/api/proformas",
       dashboard: "/api/dashboard",
       dashboardSummary: "/api/dashboard/summary",
@@ -107,6 +133,8 @@ app.get("/api", (_req, res) => {
       staff: "/api/staff",
       staffMeta: "/api/staff/meta",
       staffSummary: "/api/staff/summary",
+      departments: "/api/departments",
+      departmentDivisions: "/api/departments/:id/divisions",
       attendance: "/api/attendance",
       attendanceDaily: "/api/attendance/daily",
       attendanceHistory: "/api/attendance/history",
@@ -115,8 +143,29 @@ app.get("/api", (_req, res) => {
       expensesMeta: "/api/expenses/meta",
       expensesSummary: "/api/expenses/summary",
       expenseMarkPaid: "/api/expenses/:id/mark-paid (PATCH)",
+      warehouses: "/api/warehouses",
+      warehouseMeta: "/api/warehouses/meta",
+      warehouseLocations: "/api/warehouses/:id/locations",
+      warehouseStructure: "/api/warehouses/:id/structure",
+      warehouseInventory: "/api/warehouses/:id/inventory",
+      warehouseHistory: "/api/warehouses/:id/history",
+      warehouseAssignLocation: "/api/warehouses/:id/assign-location (POST)",
+      stockMovements: "/api/stock-movements",
+      stockMovementsMeta: "/api/stock-movements/meta",
+      warehouseTransfers: "/api/warehouse-transfers",
+      warehouseTransferSubmit: "/api/warehouse-transfers/:id/submit (POST)",
+      warehouseTransferApprove: "/api/warehouse-transfers/:id/approve (POST)",
+      warehouseTransferReceive: "/api/warehouse-transfers/:id/receive (POST)",
+      goodsReceipts: "/api/goods-receipts",
+      goodsIssues: "/api/goods-issues",
+      stockCounts: "/api/stock-counts",
+      auditLogs: "/api/audit-logs",
+      approvals: "/api/approvals",
+      approvalsSummary: "/api/approvals/summary",
+      approvalApprove: "/api/approvals/:id/approve (POST)",
+      approvalReject: "/api/approvals/:id/reject (POST)",
       graReports: "/api/reports/gra",
-      saleVoid: "/api/sales/:id/void (PATCH)",
+      productUnits: "/api/products/meta/units",
       productSearch: "/api/products/search",
       productLookupSku: "/api/products/lookup/sku/:sku",
     },
@@ -129,6 +178,7 @@ app.get("/api/products/meta/units", (_req, res) => {
 
 app.use("/api/products", productsRouter);
 app.use("/api/sales", salesRouter);
+app.use("/api/customers", customersRouter);
 
 app.get("/api/suppliers/meta/categories", (_req, res) => {
   res.json({ categories: SUPPLIER_CATEGORIES });

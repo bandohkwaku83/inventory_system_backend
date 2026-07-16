@@ -37,25 +37,39 @@ async function validateCategoryIds(ids) {
 }
 
 async function validateRoleId(roleId) {
-  const raw = typeof roleId === "string" ? roleId.trim() : String(roleId ?? "").trim();
+  const raw =
+    typeof roleId === "string" ? roleId.trim() : String(roleId ?? "").trim();
   if (!raw) {
     return { error: "roleId is required" };
   }
 
   let role = null;
-  if (mongoose.Types.ObjectId.isValid(raw)) {
+  // Strict ObjectId check — mongoose.isValid is too loose for short strings.
+  if (/^[a-fA-F0-9]{24}$/.test(raw)) {
     role = await Role.findById(raw).lean();
   }
   if (!role) {
     role = await Role.findOne({ slug: raw.toLowerCase() }).lean();
   }
   if (!role) {
+    // Frontend often sends the display name instead of _id.
+    role = await Role.findOne({ name: raw })
+      .collation({ locale: "en", strength: 2 })
+      .lean();
+  }
+  if (!role) {
     return {
-      error:
-        "Role not found. Use a role _id from GET /api/roles (or a system role slug like admin, cashier).",
+      error: `Role not found for "${raw}". Pass role _id, slug (e.g. cashier), or role name from GET /api/roles.`,
     };
   }
   return { value: role };
+}
+
+function pickRoleId(body) {
+  if (!body || typeof body !== "object") return undefined;
+  if (Object.prototype.hasOwnProperty.call(body, "roleId")) return body.roleId;
+  if (Object.prototype.hasOwnProperty.call(body, "role")) return body.role;
+  return undefined;
 }
 
 async function resolveStaff(staffId, { excludeUserId } = {}) {
@@ -105,7 +119,7 @@ router.post("/", async (req, res, next) => {
     const staffId = req.body?.staffId;
     const emailRaw = req.body?.email;
     const password = req.body?.password;
-    const roleId = req.body?.roleId;
+    const roleId = pickRoleId(req.body);
 
     const staffResult = await resolveStaff(staffId);
     if (staffResult.error) {
@@ -121,7 +135,7 @@ router.post("/", async (req, res, next) => {
       res.status(400).json({ message: "password must be at least 6 characters" });
       return;
     }
-    if (!roleId) {
+    if (roleId === undefined || roleId === null || roleId === "") {
       res.status(400).json({ message: "roleId is required" });
       return;
     }
@@ -225,8 +239,8 @@ router.patch("/:id", async (req, res, next) => {
       user.email = emailRaw.trim().toLowerCase();
     }
 
-    if (hasField(body, "roleId")) {
-      const roleResult = await validateRoleId(body.roleId);
+    if (hasField(body, "roleId") || hasField(body, "role")) {
+      const roleResult = await validateRoleId(pickRoleId(body));
       if (roleResult.error) {
         res.status(400).json({ message: roleResult.error });
         return;

@@ -111,6 +111,23 @@ const DEFAULT_ROLES = [
     isSystem: true,
   },
   {
+    slug: "sales",
+    name: "Sales",
+    description: "Sales floor POS and customer access",
+    entitlements: [
+      "dashboard",
+      "products",
+      "inventory",
+      "price_list",
+      "sales_pos",
+      "sales_reports",
+      "receipts",
+      "proforma_invoices",
+      "customers",
+    ],
+    isSystem: true,
+  },
+  {
     slug: "gra_reporter",
     name: "GRA Reporter",
     description: "GRA tax reporting and sales visibility",
@@ -209,12 +226,14 @@ async function seedRoles() {
     { $set: { entitlements: ALL_ENTITLEMENT_KEYS } }
   );
 
-  // Keep WMS system roles in sync when entitlements evolve.
+  // Keep WMS / sales system roles in sync when entitlements evolve.
   for (const slug of [
     "warehouse_manager",
     "store_keeper",
     "requester",
     "auditor",
+    "cashier",
+    "sales",
   ]) {
     const role = DEFAULT_ROLES.find((r) => r.slug === slug);
     if (!role) continue;
@@ -227,7 +246,9 @@ async function seedRoles() {
           entitlements: role.entitlements,
           isSystem: true,
         },
-      }
+        $setOnInsert: { slug: role.slug },
+      },
+      { upsert: true }
     );
   }
 }

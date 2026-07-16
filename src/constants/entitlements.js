@@ -51,6 +51,7 @@ const ENTITLEMENT_GROUPS = [
       { key: "payroll", label: "Payroll", description: "Manage staff payroll" },
       { key: "staff_attendance", label: "Staff Attendance", description: "Track attendance records" },
       { key: "users", label: "Users", description: "Manage system users" },
+      { key: "sms", label: "SMS", description: "Send and manage SMS messages" },
     ],
   },
   {

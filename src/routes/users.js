@@ -37,12 +37,23 @@ async function validateCategoryIds(ids) {
 }
 
 async function validateRoleId(roleId) {
-  if (!mongoose.Types.ObjectId.isValid(roleId)) {
-    return { error: "Invalid roleId" };
+  const raw = typeof roleId === "string" ? roleId.trim() : String(roleId ?? "").trim();
+  if (!raw) {
+    return { error: "roleId is required" };
   }
-  const role = await Role.findById(roleId).lean();
+
+  let role = null;
+  if (mongoose.Types.ObjectId.isValid(raw)) {
+    role = await Role.findById(raw).lean();
+  }
   if (!role) {
-    return { error: "Role not found" };
+    role = await Role.findOne({ slug: raw.toLowerCase() }).lean();
+  }
+  if (!role) {
+    return {
+      error:
+        "Role not found. Use a role _id from GET /api/roles (or a system role slug like admin, cashier).",
+    };
   }
   return { value: role };
 }

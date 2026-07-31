@@ -260,6 +260,73 @@
             "url": "{{baseUrl}}/api/auth/me"
           },
           "response": []
+        },
+        {
+          "name": "Forgot password",
+          "description": "Sends a reset email if the account exists. Always returns a generic success message.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/forgot-password"
+          },
+          "response": []
+        },
+        {
+          "name": "Reset password",
+          "description": "Set a new password using the token from the email link (`/reset-password?token=...`). Also used for first-login invite links.",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"paste-token-from-email\",\n  \"password\": \"NewPassword123!\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/reset-password"
+          },
+          "response": []
+        },
+        {
+          "name": "Change password",
+          "description": "Authenticated password change. Use after first login when `user.mustResetPassword` is true.",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"123456\",\n  \"newPassword\": \"NewPassword123!\"\n}"
+            },
+            "url": "{{baseUrl}}/api/auth/change-password"
+          },
+          "response": []
         }
       ]
     },

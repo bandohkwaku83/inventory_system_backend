@@ -47,6 +47,20 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    /** True until the user sets their own password (first login / admin reset). */
+    mustResetPassword: {
+      type: Boolean,
+      default: false,
+    },
+    /** SHA-256 hash of the one-time reset token (never store the raw token). */
+    passwordResetTokenHash: {
+      type: String,
+      select: false,
+    },
+    passwordResetExpires: {
+      type: Date,
+      select: false,
+    },
   },
   { timestamps: true }
 );
@@ -54,6 +68,7 @@ const userSchema = new mongoose.Schema(
 userSchema.methods.toPublicJSON = function toPublicJSON() {
   const o = this.toObject();
   delete o.passwordHash;
+  delete o.passwordResetTokenHash;
   delete o.__v;
   return o;
 };

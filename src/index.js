@@ -104,7 +104,7 @@ app.get("/api", (_req, res) => {
     port: PORT,
     endpoints: {
       health: "/health",
-      auth: "/api/auth/login, /api/auth/logout, /api/auth/me",
+      auth: "/api/auth/login, /api/auth/logout, /api/auth/me, /api/auth/forgot-password, /api/auth/reset-password, /api/auth/change-password",
       users: "/api/users",
       roles: "/api/roles",
       roleEntitlements: "/api/roles/entitlements",

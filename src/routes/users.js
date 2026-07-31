@@ -6,6 +6,11 @@ const Role = require("../models/Role");
 const Category = require("../models/Category");
 const Staff = require("../models/Staff");
 const { requireAuth, requireEntitlement, toAuthUser } = require("../middleware/auth");
+const { sendPasswordResetEmail } = require("../utils/email");
+const {
+  issuePasswordResetToken,
+  buildResetPasswordUrl,
+} = require("../utils/passwordReset");
 
 const router = express.Router();
 
@@ -101,6 +106,21 @@ async function formatUser(user) {
   return toAuthUser(user, role);
 }
 
+async function sendInviteEmail(user) {
+  try {
+    const rawToken = await issuePasswordResetToken(user, "invite");
+    const resetUrl = buildResetPasswordUrl(rawToken);
+    await sendPasswordResetEmail({
+      to: user.email,
+      name: user.name,
+      resetUrl,
+      purpose: "invite",
+    });
+  } catch (err) {
+    console.error("[users] Failed to send invite email:", err.message);
+  }
+}
+
 router.get("/", async (_req, res, next) => {
   try {
     const users = await User.find().sort({ name: 1 }).lean();
@@ -164,7 +184,11 @@ router.post("/", async (req, res, next) => {
       roleId: roleResult.value._id,
       categoryIds: catResult.value,
       active,
+      mustResetPassword: true,
     });
+
+    // Invite email so the user can set their own password on first access.
+    await sendInviteEmail(user);
 
     res.status(201).json(await formatUser(user));
   } catch (err) {
@@ -269,6 +293,8 @@ router.patch("/:id", async (req, res, next) => {
       }
       user.passwordHash = await bcrypt.hash(password, 10);
       user.tokenVersion = (user.tokenVersion ?? 0) + 1;
+      // Admin-set password must be changed by the user on next login.
+      user.mustResetPassword = true;
     }
 
     try {

@@ -43,6 +43,7 @@ function toAuthUser(user, role) {
     entitlements,
     categoryIds: user.categoryIds || [],
     active: user.active !== false,
+    mustResetPassword: Boolean(user.mustResetPassword),
   };
 }
 

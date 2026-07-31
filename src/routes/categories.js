@@ -21,13 +21,34 @@ router.post("/", express.json(), async (req, res, next) => {
       res.status(400).json({ error: "name is required" });
       return;
     }
-    const doc = await Category.create({ name });
-    res.status(201).json(doc);
-  } catch (err) {
-    if (err.code === 11000) {
-      res.status(409).json({ error: "A category with this name already exists" });
+
+    // Import-friendly: reuse an existing category instead of failing on duplicate names.
+    const existing = await Category.findOne({ name }).collation({
+      locale: "en",
+      strength: 2,
+    });
+    if (existing) {
+      res.status(200).json(existing);
       return;
     }
+
+    try {
+      const doc = await Category.create({ name });
+      res.status(201).json(doc);
+    } catch (err) {
+      if (err.code === 11000) {
+        const again = await Category.findOne({ name }).collation({
+          locale: "en",
+          strength: 2,
+        });
+        if (again) {
+          res.status(200).json(again);
+          return;
+        }
+      }
+      throw err;
+    }
+  } catch (err) {
     next(err);
   }
 });

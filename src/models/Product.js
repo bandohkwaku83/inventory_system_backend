@@ -95,7 +95,6 @@ const productSchema = new mongoose.Schema(
       type: String,
       trim: true,
       maxlength: 64,
-      default: null,
     },
     imageUrl: {
       type: String,
@@ -109,7 +108,7 @@ const productSchema = new mongoose.Schema(
 productSchema.index({ category: 1 });
 productSchema.index({ name: "text", description: "text" });
 productSchema.index({ sku: 1 });
-productSchema.index({ barcode: 1 }, { unique: true, sparse: true });
+productSchema.index({ barcode: 1 });
 
 module.exports = mongoose.model("Product", productSchema);
 module.exports.PRODUCT_UNITS = UNITS;

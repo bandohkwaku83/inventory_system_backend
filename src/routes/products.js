@@ -153,7 +153,7 @@ router.post(
         maxStock = max.value;
       }
 
-      let barcode = null;
+      let barcode;
       if (req.body?.barcode != null && String(req.body.barcode).trim() !== "") {
         barcode = String(req.body.barcode).trim().slice(0, 64);
       }
@@ -167,7 +167,7 @@ router.post(
         );
       }
 
-      const product = await Product.create({
+      const productPayload = {
         sku,
         name,
         category: categoryId,
@@ -178,18 +178,18 @@ router.post(
         stockQuantity: stock.value,
         reorderAt: reorder.value,
         maxStock,
-        barcode,
         imageUrl,
-      });
+      };
+      if (barcode !== undefined) {
+        productPayload.barcode = barcode;
+      }
+
+      const product = await Product.create(productPayload);
 
       await product.populate("category");
 
       res.status(201).json(product.toJSON());
     } catch (err) {
-      if (err.code === 11000 && err.keyPattern && err.keyPattern.barcode) {
-        res.status(409).json({ error: "This barcode already exists" });
-        return;
-      }
       next(err);
     }
   }
@@ -479,10 +479,6 @@ router.patch(
       try {
         await product.save({ validateBeforeSave: true });
       } catch (err) {
-        if (err.code === 11000 && err.keyPattern?.barcode) {
-          res.status(409).json({ error: "This barcode already exists" });
-          return;
-        }
         if (err.name === "ValidationError") {
           const msg =
             Object.values(err.errors || {})[0]?.message ||

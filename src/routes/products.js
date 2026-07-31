@@ -186,8 +186,8 @@ router.post(
 
       res.status(201).json(product.toJSON());
     } catch (err) {
-      if (err.code === 11000 && err.keyPattern && (err.keyPattern.sku || err.keyPattern.barcode)) {
-        res.status(409).json({ error: "This SKU / barcode already exists" });
+      if (err.code === 11000 && err.keyPattern && err.keyPattern.barcode) {
+        res.status(409).json({ error: "This barcode already exists" });
         return;
       }
       next(err);
@@ -317,13 +317,6 @@ router.patch(
           if (!sku) {
             res.status(400).json({ error: "Invalid sku value" });
             return;
-          }
-          if (sku !== (product.sku || "")) {
-            const taken = await Product.exists({ sku, _id: { $ne: id } });
-            if (taken) {
-              res.status(409).json({ error: "This SKU / barcode already exists" });
-              return;
-            }
           }
           updates.sku = sku;
         }
@@ -486,8 +479,8 @@ router.patch(
       try {
         await product.save({ validateBeforeSave: true });
       } catch (err) {
-        if (err.code === 11000 && (err.keyPattern?.sku || err.keyPattern?.barcode)) {
-          res.status(409).json({ error: "This SKU / barcode already exists" });
+        if (err.code === 11000 && err.keyPattern?.barcode) {
+          res.status(409).json({ error: "This barcode already exists" });
           return;
         }
         if (err.name === "ValidationError") {

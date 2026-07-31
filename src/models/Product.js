@@ -108,7 +108,7 @@ const productSchema = new mongoose.Schema(
 
 productSchema.index({ category: 1 });
 productSchema.index({ name: "text", description: "text" });
-productSchema.index({ sku: 1 }, { unique: true, sparse: true });
+productSchema.index({ sku: 1 });
 productSchema.index({ barcode: 1 }, { unique: true, sparse: true });
 
 module.exports = mongoose.model("Product", productSchema);

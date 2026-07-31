@@ -39,6 +39,22 @@ async function connectDb() {
     { upsert: true }
   );
 
+  // Drop legacy unique SKU index so duplicate SKUs are allowed.
+  // Same index name (sku_1) with different options is not replaced by createIndexes alone.
+  try {
+    const products = mongoose.connection.collection("products");
+    const indexes = await products.indexes();
+    const skuIndex = indexes.find((idx) => idx.name === "sku_1" && idx.unique);
+    if (skuIndex) {
+      await products.dropIndex("sku_1");
+      console.log("Dropped unique products.sku_1 index (duplicates allowed)");
+    }
+  } catch (err) {
+    if (err.code !== 26 && err.codeName !== "NamespaceNotFound") {
+      console.warn("Could not inspect/drop products.sku_1:", err.message);
+    }
+  }
+
   return mongoose;
 }
 

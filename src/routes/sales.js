@@ -326,6 +326,23 @@ async function findSaleByParam(id) {
   return sale;
 }
 
+/** Admins see all sales; everyone else only sales they served. */
+function canViewAllSales(req) {
+  return req.authUser?.role?.slug === "admin";
+}
+
+function applySalesVisibilityFilter(filter, req) {
+  if (!canViewAllSales(req)) {
+    filter.servedBy = req.user._id;
+  }
+  return filter;
+}
+
+function canAccessSale(req, sale) {
+  if (canViewAllSales(req)) return true;
+  return sale?.servedBy && String(sale.servedBy) === String(req.user._id);
+}
+
 function formatSale(doc) {
   if (!doc) return doc;
   const o = typeof doc.toObject === "function" ? doc.toObject() : { ...doc };
@@ -606,6 +623,8 @@ router.get("/", requireAuth, async (req, res, next) => {
       );
     }
 
+    applySalesVisibilityFilter(filter, req);
+
     const [rows, total] = await Promise.all([
       Sale.find(filter).sort({ timestamp: -1 }).skip(skip).limit(limit).lean(),
       Sale.countDocuments(filter),
@@ -639,7 +658,7 @@ router.patch(
   async (req, res, next) => {
     try {
       const sale = await findSaleByParam(req.params.id);
-      if (!sale) {
+      if (!sale || !canAccessSale(req, sale)) {
         res.status(404).json({ message: "Sale not found" });
         return;
       }
@@ -859,7 +878,7 @@ router.patch(
 router.get("/:id", requireAuth, async (req, res, next) => {
   try {
     const sale = await findSaleByParam(req.params.id);
-    if (!sale) {
+    if (!sale || !canAccessSale(req, sale)) {
       res.status(404).json({ message: "Sale not found" });
       return;
     }
@@ -877,7 +896,7 @@ router.patch(
   async (req, res, next) => {
     try {
       const sale = await findSaleByParam(req.params.id);
-      if (!sale) {
+      if (!sale || !canAccessSale(req, sale)) {
         res.status(404).json({ message: "Sale not found" });
         return;
       }
@@ -921,7 +940,7 @@ router.delete(
   async (req, res, next) => {
     try {
       const sale = await findSaleByParam(req.params.id);
-      if (!sale) {
+      if (!sale || !canAccessSale(req, sale)) {
         res.status(404).json({ message: "Sale not found" });
         return;
       }

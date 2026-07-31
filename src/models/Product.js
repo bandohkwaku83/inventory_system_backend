@@ -41,13 +41,6 @@ const productSchema = new mongoose.Schema(
       trim: true,
       maxlength: 64,
       default: null,
-      validate: {
-        validator(v) {
-          if (v === null || v === undefined || v === "") return true;
-          return /^[A-Za-z0-9_-]+$/.test(String(v));
-        },
-        message: "SKU may only contain letters, digits, hyphens, and underscores",
-      },
     },
     name: {
       type: String,

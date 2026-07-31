@@ -33,20 +33,6 @@ function parseRequiredNumber(raw, label) {
   return { value: n };
 }
 
-function skuErrorMessage(invalidSku) {
-  if (invalidSku === null) {
-    return { error: "Invalid sku value" };
-  }
-  return {
-    error:
-      invalidSku !== undefined && invalidSku !== null && String(invalidSku).trim() !== ""
-        ? "SKU may only contain letters, digits, hyphens, and underscores"
-        : "Invalid sku value",
-  };
-}
-
-const SKU_PATTERN = /^[A-Za-z0-9_-]+$/;
-
 function escapeRegex(s) {
   return String(s).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
@@ -62,10 +48,6 @@ router.post(
       let sku = null;
       if (skuRaw !== undefined && skuRaw !== null && String(skuRaw).trim() !== "") {
         sku = String(skuRaw).trim();
-        if (!SKU_PATTERN.test(sku)) {
-          res.status(400).json(skuErrorMessage(skuRaw));
-          return;
-        }
       }
 
       const name =
@@ -332,8 +314,8 @@ router.patch(
               : body.sku != null
                 ? String(body.sku).trim()
                 : "";
-          if (!sku || !SKU_PATTERN.test(sku)) {
-            res.status(400).json(skuErrorMessage(body.sku));
+          if (!sku) {
+            res.status(400).json({ error: "Invalid sku value" });
             return;
           }
           if (sku !== (product.sku || "")) {

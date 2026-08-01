@@ -523,7 +523,6 @@ router.post(
           taxableValue: taxBreakdown.taxableValue,
           nhil: taxBreakdown.nhil,
           getfund: taxBreakdown.getfund,
-          covid: taxBreakdown.covid,
           vat: taxBreakdown.vat,
         },
         status,
@@ -857,7 +856,6 @@ router.patch(
         taxableValue: totals.taxBreakdown.taxableValue,
         nhil: totals.taxBreakdown.nhil,
         getfund: totals.taxBreakdown.getfund,
-        covid: totals.taxBreakdown.covid,
         vat: totals.taxBreakdown.vat,
       };
 

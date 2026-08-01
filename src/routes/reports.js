@@ -75,7 +75,6 @@ async function getGraReport(req, res, next) {
       taxableValue: 0,
       nhil: 0,
       getfund: 0,
-      covid: 0,
       vat: 0,
     };
 
@@ -90,7 +89,6 @@ async function getGraReport(req, res, next) {
       );
       aggregated.nhil = roundMoney(aggregated.nhil + breakdown.nhil);
       aggregated.getfund = roundMoney(aggregated.getfund + breakdown.getfund);
-      aggregated.covid = roundMoney(aggregated.covid + breakdown.covid);
       aggregated.vat = roundMoney(aggregated.vat + breakdown.vat);
 
       return {

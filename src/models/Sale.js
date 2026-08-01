@@ -44,7 +44,6 @@ const taxBreakdownSchema = new mongoose.Schema(
     taxableValue: { type: Number, default: 0 },
     nhil: { type: Number, default: 0 },
     getfund: { type: Number, default: 0 },
-    covid: { type: Number, default: 0 },
     vat: { type: Number, default: 0 },
   },
   { _id: false }

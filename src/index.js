@@ -227,7 +227,11 @@ app.use((err, _req, res, _next) => {
 
 async function start() {
   await connectDb();
-  await runSeed();
+  try {
+    await runSeed();
+  } catch (err) {
+    console.error("Seed failed (server will still start):", err.message);
+  }
 
   app.listen(PORT, () => {
     console.log(`Server listening on http://localhost:${PORT}`);

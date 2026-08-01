@@ -226,55 +226,80 @@ async function seedSettings() {
   );
 }
 
+async function upsertSystemRole(role) {
+  const payload = {
+    description: role.description,
+    entitlements: role.entitlements,
+    isSystem: true,
+  };
+
+  const bySlug = await Role.findOne({ slug: role.slug });
+  if (bySlug) {
+    try {
+      await Role.updateOne(
+        { _id: bySlug._id },
+        { $set: { ...payload, name: role.name } }
+      );
+    } catch (err) {
+      // Name may collide with another role under case-insensitive unique index.
+      if (err.code === 11000) {
+        await Role.updateOne({ _id: bySlug._id }, { $set: payload });
+        console.warn(
+          `[seed] Role "${role.slug}" kept existing name "${bySlug.name}" (name conflict with "${role.name}")`
+        );
+        return;
+      }
+      throw err;
+    }
+    return;
+  }
+
+  // Reuse an existing role with the same display name (common on prod after manual creates).
+  const byName = await Role.findOne({ name: role.name }).collation({
+    locale: "en",
+    strength: 2,
+  });
+  if (byName) {
+    if (byName.slug && byName.slug !== role.slug) {
+      console.warn(
+        `[seed] Role name "${role.name}" already used by slug "${byName.slug}"; skipping create of "${role.slug}"`
+      );
+      return;
+    }
+    await Role.updateOne(
+      { _id: byName._id },
+      { $set: { ...payload, slug: role.slug, name: role.name } }
+    );
+    return;
+  }
+
+  try {
+    await Role.create({
+      slug: role.slug,
+      name: role.name,
+      ...payload,
+    });
+  } catch (err) {
+    if (err.code === 11000) {
+      console.warn(
+        `[seed] Skipped creating role "${role.slug}" due to duplicate key: ${err.message}`
+      );
+      return;
+    }
+    throw err;
+  }
+}
+
 async function seedRoles() {
   for (const role of DEFAULT_ROLES) {
-    await Role.updateOne(
-      { slug: role.slug },
-      {
-        $setOnInsert: {
-          name: role.name,
-          description: role.description,
-          entitlements: role.entitlements,
-          isSystem: role.isSystem,
-        },
-      },
-      { upsert: true }
-    );
+    await upsertSystemRole(role);
   }
 
   // Keep admin entitlements in sync with the canonical key list.
   await Role.updateOne(
     { slug: "admin" },
-    { $set: { entitlements: ALL_ENTITLEMENT_KEYS } }
+    { $set: { entitlements: ALL_ENTITLEMENT_KEYS, isSystem: true } }
   );
-
-  // Keep WMS / sales system roles in sync when entitlements evolve.
-  for (const slug of [
-    "warehouse_manager",
-    "store_keeper",
-    "requester",
-    "auditor",
-    "cashier",
-    "sales",
-    "sales_manager",
-    "gra_reporter",
-  ]) {
-    const role = DEFAULT_ROLES.find((r) => r.slug === slug);
-    if (!role) continue;
-    await Role.updateOne(
-      { slug },
-      {
-        $set: {
-          name: role.name,
-          description: role.description,
-          entitlements: role.entitlements,
-          isSystem: true,
-        },
-        $setOnInsert: { slug: role.slug },
-      },
-      { upsert: true }
-    );
-  }
 }
 
 async function migrateLegacyUsers() {

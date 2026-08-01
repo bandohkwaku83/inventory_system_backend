@@ -49,6 +49,7 @@ const DEFAULT_ROLES = [
       "approvals",
       "audit_log",
       "sales_reports",
+      "sales_history",
     ],
     isSystem: true,
   },
@@ -87,6 +88,7 @@ const DEFAULT_ROLES = [
       "inventory",
       "warehouses",
       "sales_reports",
+      "sales_history",
       "receipts",
       "gra_reports",
       "audit_log",
@@ -96,7 +98,7 @@ const DEFAULT_ROLES = [
   {
     slug: "cashier",
     name: "Cashier",
-    description: "Point-of-sale and catalog access",
+    description: "Point-of-sale and catalog access (today's own sales only)",
     entitlements: [
       "dashboard",
       "products",
@@ -113,7 +115,7 @@ const DEFAULT_ROLES = [
   {
     slug: "sales",
     name: "Sales",
-    description: "Sales floor POS and customer access",
+    description: "Sales floor POS and customer access (today's own sales only)",
     entitlements: [
       "dashboard",
       "products",
@@ -128,6 +130,25 @@ const DEFAULT_ROLES = [
     isSystem: true,
   },
   {
+    slug: "sales_manager",
+    name: "Sales Manager",
+    description: "POS plus full sales history across all cashiers",
+    entitlements: [
+      "dashboard",
+      "charts",
+      "products",
+      "inventory",
+      "price_list",
+      "sales_pos",
+      "sales_reports",
+      "sales_history",
+      "receipts",
+      "proforma_invoices",
+      "customers",
+    ],
+    isSystem: true,
+  },
+  {
     slug: "gra_reporter",
     name: "GRA Reporter",
     description: "GRA tax reporting and sales visibility",
@@ -135,6 +156,7 @@ const DEFAULT_ROLES = [
       "dashboard",
       "charts",
       "sales_reports",
+      "sales_history",
       "receipts",
       "gra_reports",
     ],
@@ -234,6 +256,8 @@ async function seedRoles() {
     "auditor",
     "cashier",
     "sales",
+    "sales_manager",
+    "gra_reporter",
   ]) {
     const role = DEFAULT_ROLES.find((r) => r.slug === slug);
     if (!role) continue;

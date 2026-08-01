@@ -29,6 +29,12 @@ const ENTITLEMENT_GROUPS = [
     items: [
       { key: "sales_pos", label: "Sales (POS)", description: "Process point-of-sale transactions" },
       { key: "sales_reports", label: "Sales Reports", description: "View sales analytics" },
+      {
+        key: "sales_history",
+        label: "Sales History",
+        description:
+          "View sales for any date and all cashiers (managers/admins). Without this, users only see their own sales for today.",
+      },
       { key: "receipts", label: "Receipts", description: "View and reprint receipts" },
     ],
   },

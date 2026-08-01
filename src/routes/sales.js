@@ -326,16 +326,48 @@ async function findSaleByParam(id) {
   return sale;
 }
 
-/** Admins see all sales; everyone else only sales they served. */
+/** Admins and sales_history holders see all cashiers; others only their own. */
 function canViewAllSales(req) {
-  return req.authUser?.role?.slug === "admin";
+  if (req.authUser?.role?.slug === "admin") return true;
+  const entitlements = req.authUser?.entitlements || [];
+  return entitlements.includes("sales_history");
+}
+
+/** Same gate unlocks past dates. Without it, list is forced to today. */
+function canViewSalesHistory(req) {
+  return canViewAllSales(req);
+}
+
+function todayDateKey(d = new Date()) {
+  return d.toISOString().slice(0, 10);
 }
 
 function applySalesVisibilityFilter(filter, req) {
-  if (!canViewAllSales(req)) {
+  const viewAll = canViewAllSales(req);
+  const viewHistory = canViewSalesHistory(req);
+
+  if (!viewAll) {
     filter.servedBy = req.user._id;
+  } else if (req.query.servedBy && mongoose.Types.ObjectId.isValid(String(req.query.servedBy))) {
+    filter.servedBy = String(req.query.servedBy);
   }
-  return filter;
+
+  if (!viewHistory) {
+    // Cashiers start fresh each day — only today's own sales.
+    filter.date = todayDateKey();
+    delete filter.timestamp;
+  }
+
+  return {
+    filter,
+    scope: {
+      viewAll,
+      viewHistory,
+      ownOnly: !viewAll,
+      todayOnly: !viewHistory,
+      today: todayDateKey(),
+    },
+  };
 }
 
 function canAccessSale(req, sale) {
@@ -590,29 +622,33 @@ router.get("/", requireAuth, async (req, res, next) => {
 
     const fromRaw = req.query.from ?? req.query.dateFrom;
     const toRaw = req.query.to ?? req.query.dateTo;
-    if ((fromRaw && String(fromRaw).trim()) || (toRaw && String(toRaw).trim())) {
-      filter.timestamp = {};
-      if (fromRaw && String(fromRaw).trim()) {
-        const from = new Date(String(fromRaw).trim());
-        if (!Number.isNaN(from.getTime())) {
-          const start = new Date(from);
-          start.setUTCHours(0, 0, 0, 0);
-          filter.timestamp.$gte = start;
-        }
-      }
-      if (toRaw && String(toRaw).trim()) {
-        const to = new Date(String(toRaw).trim());
-        if (!Number.isNaN(to.getTime())) {
-          const end = new Date(to);
-          end.setUTCHours(23, 59, 59, 999);
-          filter.timestamp.$lte = end;
-        }
-      }
-      if (Object.keys(filter.timestamp).length === 0) delete filter.timestamp;
-    }
+    const viewHistoryEarly = canViewSalesHistory(req);
 
-    if (req.query.date && String(req.query.date).trim()) {
-      filter.date = String(req.query.date).trim();
+    if (viewHistoryEarly) {
+      if ((fromRaw && String(fromRaw).trim()) || (toRaw && String(toRaw).trim())) {
+        filter.timestamp = {};
+        if (fromRaw && String(fromRaw).trim()) {
+          const from = new Date(String(fromRaw).trim());
+          if (!Number.isNaN(from.getTime())) {
+            const start = new Date(from);
+            start.setUTCHours(0, 0, 0, 0);
+            filter.timestamp.$gte = start;
+          }
+        }
+        if (toRaw && String(toRaw).trim()) {
+          const to = new Date(String(toRaw).trim());
+          if (!Number.isNaN(to.getTime())) {
+            const end = new Date(to);
+            end.setUTCHours(23, 59, 59, 999);
+            filter.timestamp.$lte = end;
+          }
+        }
+        if (Object.keys(filter.timestamp).length === 0) delete filter.timestamp;
+      }
+
+      if (req.query.date && String(req.query.date).trim()) {
+        filter.date = String(req.query.date).trim();
+      }
     }
 
     const receiptQ = req.query.receiptId ?? req.query.receiptNumber ?? req.query.saleNumber;
@@ -623,7 +659,7 @@ router.get("/", requireAuth, async (req, res, next) => {
       );
     }
 
-    applySalesVisibilityFilter(filter, req);
+    const { scope } = applySalesVisibilityFilter(filter, req);
 
     const [rows, total] = await Promise.all([
       Sale.find(filter).sort({ timestamp: -1 }).skip(skip).limit(limit).lean(),
@@ -644,6 +680,7 @@ router.get("/", requireAuth, async (req, res, next) => {
       limit,
       total,
       totalPages: Math.ceil(total / limit) || 0,
+      scope,
     });
   } catch (err) {
     next(err);

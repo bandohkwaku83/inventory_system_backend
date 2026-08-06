@@ -47,6 +47,7 @@ const { router: goodsReceiptsRouter } = require("./routes/goodsReceipts");
 const { router: goodsIssuesRouter } = require("./routes/goodsIssues");
 const { router: stockCountsRouter } = require("./routes/stockCounts");
 const { router: auditLogsRouter } = require("./routes/auditLogs");
+const smsRouter = require("./routes/sms");
 
 const app = express();
 const PORT = Number(process.env.PORT) || 8000;
@@ -97,6 +98,7 @@ app.use("/api/goods-receipts", goodsReceiptsRouter);
 app.use("/api/goods-issues", goodsIssuesRouter);
 app.use("/api/stock-counts", stockCountsRouter);
 app.use("/api/audit-logs", auditLogsRouter);
+app.use("/api/sms", smsRouter);
 
 app.get("/api", (_req, res) => {
   res.json({
@@ -160,6 +162,9 @@ app.get("/api", (_req, res) => {
       goodsIssues: "/api/goods-issues",
       stockCounts: "/api/stock-counts",
       auditLogs: "/api/audit-logs",
+      sms: "/api/sms",
+      smsMeta: "/api/sms/meta",
+      smsSend: "/api/sms/send (POST)",
       approvals: "/api/approvals",
       approvalsSummary: "/api/approvals/summary",
       approvalApprove: "/api/approvals/:id/approve (POST)",

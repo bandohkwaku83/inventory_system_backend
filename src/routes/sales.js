@@ -5,8 +5,15 @@ const Product = require("../models/Product");
 const Customer = require("../models/Customer");
 const { roundMoney, computeGraBreakdown } = require("../utils/graTax");
 const { requireAuth, requireEntitlement } = require("../middleware/auth");
+const { notifySaleReceiptSms } = require("../utils/sms");
 
 const router = express.Router();
+
+function customerPhoneFromBody(body) {
+  const raw = body?.customerPhone ?? body?.phone;
+  if (typeof raw !== "string" || !raw.trim()) return null;
+  return raw.trim();
+}
 
 const SALE_STATUSES = ["pending", "completed", "voided"];
 
@@ -590,6 +597,12 @@ router.post(
         });
       }
 
+      if (status === "completed") {
+        await notifySaleReceiptSms(sale, {
+          phone: customerPhoneFromBody(req.body),
+        });
+      }
+
       res.status(201).json(formatSale(sale));
     } catch (err) {
       next(err);
@@ -900,6 +913,12 @@ router.patch(
           total: sale.total,
           paymentMethod: sale.paymentMethod,
           soldAt: sale.timestamp,
+        });
+      }
+
+      if (becomingCompleted && prevStatus !== "completed") {
+        await notifySaleReceiptSms(sale, {
+          phone: customerPhoneFromBody(body),
         });
       }
 
